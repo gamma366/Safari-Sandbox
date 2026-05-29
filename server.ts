@@ -13,8 +13,13 @@ async function startServer() {
   app.use(express.json());
 
   // Gemini Setup
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn("WARNING: GEMINI_API_KEY environment variable is missing. You must set this in your deployment environment (e.g., Render) for the app to work.");
+  }
+  
   const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
+    apiKey: apiKey || "MISSING_KEY", // Provide a dummy string to prevent the SDK from trying to use Google Cloud Default Credentials
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -25,6 +30,10 @@ async function startServer() {
   // API routes
   app.post("/api/itinerary", async (req, res) => {
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Server Configuration Error: GEMINI_API_KEY environment variable is not set. Please set it in your deployment environment variables on Render." });
+      }
+
       const { days, interests, season, flightPref, prompt } = req.body;
       
       const response = await ai.models.generateContent({
@@ -163,6 +172,10 @@ async function startServer() {
 
   app.post("/api/add-day", async (req, res) => {
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Server Configuration Error: GEMINI_API_KEY environment variable is not set. Please set it in your deployment environment variables on Render." });
+      }
+
       const { currentItinerary, interests, season, flightPref } = req.body;
       
       const lastDay = currentItinerary[currentItinerary.length - 1];

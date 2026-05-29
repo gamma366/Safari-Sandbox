@@ -1,10 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { MapPin, Clock, Sun, Calendar, Compass, Camera, Tent, Loader2, Sparkles, Info, X, ShieldCheck, AlertTriangle, Edit3, Plus, Settings2, Check, ArrowRight, Receipt, Trash2, Users, Printer } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const SafariMap = lazy(() => import('./components/SafariMap').then(m => ({ default: m.SafariMap })));
-const CostSummary = lazy(() => import('./components/CostSummary').then(m => ({ default: m.CostSummary })));
-const ConsultantTab = lazy(() => import('./components/ConsultantTab').then(m => ({ default: m.ConsultantTab })));
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+
+const SafariMap = lazy(() => import('./components/SafariMap').then(m => ({ default: m.SafariMap })));
+const CostSummary = lazy(() => import('./components/CostSummary').then(m => ({ default: m.CostSummary })));
+const ConsultantTab = lazy(() => import('./components/ConsultantTab').then(m => ({ default: m.ConsultantTab })));
 
 const INTEREST_OPTIONS = [
   { id: 'wildlife', label: 'General Wildlife', icon: Compass },
@@ -992,20 +992,21 @@ export default function App() {
     <div className="min-h-screen pb-20">
       {/* Hero Section */}
       <div className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden print:hidden border-b-[6px] border-safari-accent">
-        <div className="absolute inset-0 bg-black/40 z-10"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=1600&auto=format&fit=crop" 
-          alt="Tanzania Safari" 
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          referrerPolicy="no-referrer"
-          loading="eager"
-        />
+        <div className="absolute inset-0 bg-[#FCFBFA] opacity-90 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?q=60&w=1200&auto=format&fit=crop" 
+            alt="Tanzania Safari" 
+            className="w-full h-full object-cover mix-blend-multiply opacity-50 z-0"
+            referrerPolicy="no-referrer"
+            loading="eager"
+          />
+        </div>
         <div className="relative z-20 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
           <div className="w-16 h-[1px] bg-safari-accent mb-6"></div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-serif text-white mb-6 drop-shadow-md tracking-tight"
+            className="text-5xl md:text-7xl font-serif text-safari-text mb-6 drop-shadow-sm tracking-tight"
           >
             Tanzania Safari Planner
           </motion.h1>
@@ -1013,7 +1014,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-lg md:text-xl text-[#F9F8F6] opacity-90 font-light tracking-widest uppercase text-sm md:text-base max-w-2xl"
+            className="text-lg md:text-xl text-safari-text/80 font-light tracking-widest uppercase text-sm md:text-base max-w-2xl"
           >
             Craft your perfect journey through the Serengeti, Ngorongoro, and beyond.
           </motion.p>
@@ -1172,20 +1173,20 @@ export default function App() {
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                     <div className="bg-white/95 backdrop-blur shadow-md border border-safari-accent/20 p-4 md:px-6 flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
                       <TabsList className="bg-transparent p-0 h-auto gap-6 rounded-none justify-start w-full md:w-auto border-b border-safari-accent/20 pb-0">
-                        <TabsTrigger value="view" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-[state=active]:border-safari-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-safari-accent translate-y-[1px]">View Itinerary</TabsTrigger>
-                        <TabsTrigger value="customize" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-[state=active]:border-safari-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="view" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px]">View Itinerary</TabsTrigger>
+                        <TabsTrigger value="customize" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Settings2 className="w-4 h-4" />
                           Customize
                         </TabsTrigger>
-                        <TabsTrigger value="map" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-[state=active]:border-safari-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="map" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <MapPin className="w-4 h-4" />
                           Interactive Map
                         </TabsTrigger>
-                        <TabsTrigger value="cost" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-[state=active]:border-safari-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="cost" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Receipt className="w-4 h-4" />
                           Cost Summary
                         </TabsTrigger>
-                        <TabsTrigger value="consultant" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-[state=active]:border-safari-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="consultant" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Users className="w-4 h-4" />
                           Consultant
                         </TabsTrigger>
