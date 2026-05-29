@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Safari Cost Summary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom luxury safari theme */
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --safari-bg: #FAF9F6;
+            --safari-text: #2c3127;
+            --safari-accent: #c48b52;
+            --safari-accent-hover: #b07c49;
+            --safari-muted: #6b7264;
+            --safari-card: #ffffff;
+            --safari-border: #e6e4df;
+            --safari-dark: #1a1d17;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--safari-bg);
+            color: var(--safari-text);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .currency::before {
+            content: '$';
+        }
+
+        .section-card {
+            background: var(--safari-card);
+            border: 1px solid var(--safari-border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .section-header {
+            padding: 20px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            user-select: none;
+        }
+
+        .section-header:hover {
+            background: #fafafa;
+        }
+
+        .section-content {
+            padding: 0 24px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.4s ease;
+            opacity: 0;
+        }
+
+        .section-content.open {
+            padding: 20px 24px;
+            max-height: 1500px;
+            opacity: 1;
+            border-top: 1px solid var(--safari-border);
+        }
+
+        .chevron {
+            transition: transform 0.3s ease;
+        }
+
+        .open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .btn-primary {
+            background-color: var(--safari-accent);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--safari-accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--safari-text);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            border: 1px solid var(--safari-border);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f3f2ee;
+            border-color: #d1cfc7;
+        }
+        
+        .table-row-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px dashed var(--safari-border);
+        }
+        .table-row-line:last-child {
+            border-bottom: none;
+        }
+        .item-label {
+            font-weight: 500;
+        }
+        .item-desc {
+            font-size: 0.85rem;
+            color: var(--safari-muted);
+        }
+        .item-cost {
+            font-weight: 600;
+            text-align: right;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-20">
+
+    <header class="bg-white border-b border-[#e6e4df] py-8 mb-10 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-4xl mx-auto px-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-[#c48b52]">Safari Options</h1>
+                <p class="text-[#6b7264] mt-1 tracking-wide uppercase text-sm font-semibold">Quotation Summary</p>
+            </div>
+            <div class="hidden sm:flex gap-4">
+                <a href="/" class="btn-secondary">View Interactive Map</a>
+                <button class="btn-primary" onclick="alert('Booking consultation form will open here.')">Book Consultation</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6">
+        
+        <!-- Safari Overview -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('overview')">
+                <h2 class="text-xl font-semibold">1. Safari Overview</h2>
+                <svg class="chevron w-5 h-5 text-gray-500" id="overview-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            <div class="section-content open" id="overview-content">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div>
+                        <p class="text-[#6b7264] text-xs uppercase tracking-wider mb-1 font-semibold">Guests</p>
+                        <p class="font-semibold text-lg" id="val-guests">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[#6b7264] text-xs uppercase tracking-wider mb-1 font-semibold">Duration</p>
+                        <p class="font-semibold text-lg" id="val-days">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[#6b7264] text-xs uppercase tracking-wider mb-1 font-semibold">Style</p>
+                        <p class="font-semibold text-lg" id="val-style">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[#6b7264] text-xs uppercase tracking-wider mb-1 font-semibold">Parks Included</p>
+                        <p class="font-semibold text-base leading-tight" id="val-parks">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accommodation Costs -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('accommodation')">
+                <h2 class="text-xl font-semibold">2. Accommodation Costs</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-accommodation">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="accommodation-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="accommodation-content">
+                <div id="accommodation-list"></div>
+            </div>
+        </div>
+
+        <!-- Transport Costs -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('transport')">
+                <h2 class="text-xl font-semibold">3. Transport Costs</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-transport">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="transport-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="transport-content">
+                <div id="transport-list"></div>
+            </div>
+        </div>
+
+        <!-- Park Fees -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('parkfees')">
+                <h2 class="text-xl font-semibold">4. Park & Concession Fees</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-parkfees">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="parkfees-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="parkfees-content">
+                <div id="parkfees-list"></div>
+            </div>
+        </div>
+
+        <!-- Flight Costs -->
+        <div class="section-card" id="flight-section" style="display: none;">
+            <div class="section-header" onclick="toggleSection('flights')">
+                <h2 class="text-xl font-semibold">5. Flight Costs</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-flights">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="flights-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="flights-content">
+                <div id="flights-list"></div>
+            </div>
+        </div>
+
+        <!-- Optional Activities -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('activities')">
+                <h2 class="text-xl font-semibold">6. Optional Activities</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-activities">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="activities-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="activities-content">
+                <div id="activities-list"></div>
+            </div>
+        </div>
+
+        <!-- Taxes & Fees -->
+        <div class="section-card">
+            <div class="section-header" onclick="toggleSection('taxes')">
+                <h2 class="text-xl font-semibold">7. Taxes & Fees</h2>
+                <div class="flex items-center gap-4">
+                    <span class="font-bold text-lg" id="total-taxes">$0</span>
+                    <svg class="chevron w-5 h-5 text-gray-500" id="taxes-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+            </div>
+            <div class="section-content" id="taxes-content">
+                <div id="taxes-list"></div>
+            </div>
+        </div>
+
+        <!-- Grand Total -->
+        <div class="mt-10 bg-[#1a1d17] text-white rounded-xl p-8 shadow-xl relative overflow-hidden">
+            <!-- Decorative pattern overlay -->
+            <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h20v20H0V0zm10 10l10-10H0l10 10z\' fill=\'%23ffffff\' fill-rule=\'evenodd\'/%3E%3C/svg%3E');"></div>
+            
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="w-full md:w-auto text-center md:text-left">
+                    <h2 class="text-3xl font-serif text-[#c48b52] mb-2">Final Quotation</h2>
+                    <p class="text-gray-400 text-sm">Estimated total based on current itinerary selections.</p>
+                </div>
+                <div class="text-right w-full md:w-auto md:min-w-[300px]">
+                    <div class="flex justify-between md:justify-end gap-12 mb-2 text-gray-300 text-sm">
+                        <span>Subtotal:</span>
+                        <span id="summary-subtotal" class="font-mono text-white">$0</span>
+                    </div>
+                    <div class="flex justify-between md:justify-end gap-12 mb-5 text-gray-300 text-sm">
+                        <span>Taxes & Fees:</span>
+                        <span id="summary-taxes" class="font-mono text-white">$0</span>
+                    </div>
+                    <div class="flex justify-between md:justify-end gap-12 pt-5 border-t border-gray-700/80">
+                        <span class="text-xl font-bold uppercase tracking-widest text-[#e6e4df]">Grand Total:</span>
+                        <span id="summary-total" class="text-3xl font-bold font-mono text-[#c48b52]">$0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex sm:hidden mt-8 gap-4 flex-col">
+            <button class="btn-primary w-full" onclick="alert('Booking consultation form will open here.')">Book Consultation</button>
+            <a href="/" class="btn-secondary w-full">View Interactive Map</a>
+        </div>
+
+    </main>
+
+    <script>
+        // Sample Itinerary Data
+        const safariData = {
+            overview: {
+                days: 7,
+                guests: 2,
+                style: "Luxury Safari",
+                parks: "Tarangire, Ngorongoro Crater, Serengeti"
+            },
+            accommodations: [
+                { name: "Tarangire Treetops", nights: 2, pricePerNight: 850 },
+                { name: "Ngorongoro Crater Lodge", nights: 1, pricePerNight: 1200 },
+                { name: "Serengeti Bushtops", nights: 3, pricePerNight: 1050 }
+            ],
+            transport: [
+                { vehicle: "Private 4x4 Extended Safari Land Cruiser", days: 7, pricePerDay: 280 }
+            ],
+            parkFees: [
+                { park: "Tarangire National Park", feePerPerson: 59, days: 2, concessionPerPerson: 59 },
+                { park: "Ngorongoro Conservation Area", feePerPerson: 71, days: 1, concessionPerPerson: 71 },
+                { park: "Serengeti National Park", feePerPerson: 83, days: 3, concessionPerPerson: 71 }
+            ],
+            flights: [
+                { route: "Kogatende Airstrip (Serengeti) to Arusha", costPerPerson: 360 }
+            ],
+            activities: [
+                { name: "Serengeti Hot Air Balloon Safari", costPerPerson: 599 },
+                { name: "Maasai Village Cultural Visit", costPerPerson: 40 }
+            ],
+            taxes: {
+                vatPercent: 18,
+                serviceFee: 150,
+                conservationLevy: 100
+            }
+        };
+
+        const formatMoney = (amount) => {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+        };
+
+        function toggleSection(id) {
+            const content = document.getElementById(id + '-content');
+            const chevron = document.getElementById(id + '-chevron');
+            
+            if (content.classList.contains('open')) {
+                content.classList.remove('open');
+                chevron.parentElement.parentElement.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                chevron.parentElement.parentElement.classList.add('open');
+            }
+        }
+
+        function initSummary() {
+            const guests = safariData.overview.guests;
+            
+            document.getElementById('val-guests').innerText = guests;
+            document.getElementById('val-days').innerText = safariData.overview.days + " Days";
+            document.getElementById('val-style').innerText = safariData.overview.style;
+            document.getElementById('val-parks').innerText = safariData.overview.parks;
+
+            let subtotal = 0;
+
+            // Accommodations
+            let accTotal = 0;
+            const accList = document.getElementById('accommodation-list');
+            safariData.accommodations.forEach(item => {
+                const total = item.nights * item.pricePerNight * guests;
+                accTotal += total;
+                accList.innerHTML += `
+                    <div class="table-row-line">
+                        <div>
+                            <div class="item-label">${item.name}</div>
+                            <div class="item-desc">${item.nights} Nights @ ${formatMoney(item.pricePerNight)} / night per guest</div>
+                        </div>
+                        <div class="item-cost">${formatMoney(total)}</div>
+                    </div>`;
+            });
+            document.getElementById('total-accommodation').innerText = formatMoney(accTotal);
+            subtotal += accTotal;
+
+            // Transport
+            let transTotal = 0;
+            const transList = document.getElementById('transport-list');
+            safariData.transport.forEach(item => {
+                const total = item.days * item.pricePerDay; 
+                transTotal += total;
+                transList.innerHTML += `
+                    <div class="table-row-line">
+                        <div>
+                            <div class="item-label">${item.vehicle}</div>
+                            <div class="item-desc">${item.days} Days @ ${formatMoney(item.pricePerDay)} / day</div>
+                        </div>
+                        <div class="item-cost">${formatMoney(total)}</div>
+                    </div>`;
+            });
+            document.getElementById('total-transport').innerText = formatMoney(transTotal);
+            subtotal += transTotal;
+
+            // Park Fees
+            let parkTotal = 0;
+            const parkList = document.getElementById('parkfees-list');
+            safariData.parkFees.forEach(item => {
+                const entryTotal = item.feePerPerson * guests * item.days;
+                const concessionTotal = item.concessionPerPerson * guests * item.days;
+                const total = entryTotal + concessionTotal;
+                parkTotal += total;
+                parkList.innerHTML += `
+                    <div class="table-row-line">
+                        <div>
+                            <div class="item-label">${item.park}</div>
+                            <div class="item-desc">${item.days} Days | Park Entry: ${formatMoney(item.feePerPerson)} pp/day | Lodge Concession: ${formatMoney(item.concessionPerPerson)} pp/day</div>
+                        </div>
+                        <div class="item-cost">${formatMoney(total)}</div>
+                    </div>`;
+            });
+            document.getElementById('total-parkfees').innerText = formatMoney(parkTotal);
+            subtotal += parkTotal;
+
+            // Flights
+            let fltTotal = 0;
+            if (safariData.flights && safariData.flights.length > 0) {
+                document.getElementById('flight-section').style.display = 'block';
+                const fltList = document.getElementById('flights-list');
+                safariData.flights.forEach(item => {
+                    const total = item.costPerPerson * guests;
+                    fltTotal += total;
+                    fltList.innerHTML += `
+                        <div class="table-row-line">
+                            <div>
+                                <div class="item-label">${item.route}</div>
+                                <div class="item-desc">${formatMoney(item.costPerPerson)} per person</div>
+                            </div>
+                            <div class="item-cost">${formatMoney(total)}</div>
+                        </div>`;
+                });
+                document.getElementById('total-flights').innerText = formatMoney(fltTotal);
+                subtotal += fltTotal;
+            }
+
+            // Optional Activities
+            let actTotal = 0;
+            const actList = document.getElementById('activities-list');
+            safariData.activities.forEach(item => {
+                const total = item.costPerPerson * guests;
+                actTotal += total;
+                actList.innerHTML += `
+                    <div class="table-row-line">
+                        <div>
+                            <div class="item-label">${item.name}</div>
+                            <div class="item-desc">${formatMoney(item.costPerPerson)} per person</div>
+                        </div>
+                        <div class="item-cost">${formatMoney(total)}</div>
+                    </div>`;
+            });
+            document.getElementById('total-activities').innerText = formatMoney(actTotal);
+            subtotal += actTotal;
+
+            // Taxes & Fees
+            const vatEst = subtotal * (safariData.taxes.vatPercent / 100);
+            const taxesTotal = vatEst + safariData.taxes.serviceFee + safariData.taxes.conservationLevy;
+            const taxesList = document.getElementById('taxes-list');
+            taxesList.innerHTML = `
+                <div class="table-row-line">
+                    <div>
+                        <div class="item-label">Government VAT (${safariData.taxes.vatPercent}%)</div>
+                        <div class="item-desc">Value added tax on applicable services</div>
+                    </div>
+                    <div class="item-cost">${formatMoney(vatEst)}</div>
+                </div>
+                <div class="table-row-line">
+                    <div>
+                        <div class="item-label">TDT Conservation Levy</div>
+                        <div class="item-desc">Mandatory tourism development fee</div>
+                    </div>
+                    <div class="item-cost">${formatMoney(safariData.taxes.conservationLevy)}</div>
+                </div>
+                <div class="table-row-line">
+                    <div>
+                        <div class="item-label">Handling & Administration</div>
+                        <div class="item-desc">Processing fees</div>
+                    </div>
+                    <div class="item-cost">${formatMoney(safariData.taxes.serviceFee)}</div>
+                </div>
+            `;
+            document.getElementById('total-taxes').innerText = formatMoney(taxesTotal);
+
+            // Grand Total
+            const grandTotal = subtotal + taxesTotal;
+            document.getElementById('summary-subtotal').innerText = formatMoney(subtotal);
+            document.getElementById('summary-taxes').innerText = formatMoney(taxesTotal);
+            document.getElementById('summary-total').innerText = formatMoney(grandTotal);
+        }
+
+        document.addEventListener('DOMContentLoaded', initSummary);
+    </script>
+</body>
+</html>
