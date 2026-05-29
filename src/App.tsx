@@ -855,9 +855,12 @@ export default function App() {
         
         CORE OBJECTIVE:
         Generate a LOGICAL, REALISTIC, and HIGH-QUALITY safari itinerary.
-        
+        IMPORTANT: Keep descriptions, reasoning, and expert_tips highly concise (1-2 sentences maximum). Do not generate overly long text block otherwise your response will be severely truncated.
+
         PLANNING LOGIC (VERY IMPORTANT):
         1. PARK SELECTION:
+           - NEVER add Lake Manyara National Park or Arusha National Park directly to the main itinerary UNLESS the client's interests explicitly include "bird-watching". Put them strictly as options in 'alternatives'.
+           - Maximize time spent in parks. The backbone of a safari is time logistics—plan to maximize park time without forcing an extension.
            - Short trips (<=3 days): Tarangire + Ngorongoro
            - 4–6 days: Add Serengeti
            - 7+ days: Include Serengeti zones strategically
@@ -872,6 +875,16 @@ export default function App() {
         3. ROUTING & LOGISTICS:
            - Use ONLY realistic routes from routes table
            - Following logical driving order: Arusha → Tarangire/Manyara → Ngorongoro → Serengeti.
+           - KARATU TO SERENGETI TIMING ISSUE: Karatu to Naabi Hill Gate (Serengeti entry) takes 3-4 hours. This means exiting Serengeti on a later day (e.g. Day 4) forces an early exit, leading to less time in the Crater if scheduled for the following day. To avoid this, do Crater on the way IN to Serengeti (Day 2), not the way OUT.
+           - STANDARD 5-DAY FLOW WITHOUT EARLY FLIGHT (Preferred Model):
+             Day 1: Arusha -> Tarangire -> Karatu (Do NOT use Manyara on Day 1 unless "bird-watching" requested; offer it as an alternative).
+             Day 2: Karatu -> Ngorongoro Crater -> Serengeti Central.
+             Day 3-4: Serengeti Central game drive.
+             Day 5: Serengeti Central to Arusha.
+           - STANDARD 5-DAY FLOW WITH EARLY FLIGHT:
+             Day 1-3: Same as above.
+             Day 4: Serengeti Central -> Karatu.
+             Day 5: Karatu -> (Manyara as alternative) -> Arusha.
            - NEVER DRIVE NORTHERN SERENGETI TO ARUSHA IN ONE DAY: This is a 10-12 hour drive. It is IMPOSSIBLE for a standard safari. 
              - If the client is in Northern Serengeti and needs to return to Arusha by road, they MUST have an intermediate stop (e.g., Central Serengeti, Ngorongoro, or Karatu).
              - Alternatively, recommend a FLIGHT OUT from Kogatende to Arusha.
@@ -881,7 +894,7 @@ export default function App() {
              - Explain the pros/cons of their flight choice in "flight_logic_summary".
            - NEVER create straight-line or unrealistic travel
            - NO DIRECT ARUSHA TO KARATU: There is no such thing as a direct drive from Arusha to Karatu with nothing to do. You MUST include a game drive in Tarangire or Lake Manyara in between. Arusha -> (Tarangire or Manyara game drive) -> Karatu.
-           - NO TARANGIRE TO KARATU WITHOUT ACTIVITY: From Tarangire, a guest MUST prioritize going straight to Ngorongoro Conservation Area for their next stay. Karatu is only an option if they have an activity in Lake Manyara or if specifically requested. Prioritize staying INSIDE Ngorongoro.
+           - TARANGIRE TO KARATU: For short safaris (<= 3 days), Karatu is the BEST stop from Tarangire before Ngorongoro. You MUST implement an overnight layout in Karatu or provide it as a primary alternative route option. For longer safaris (> 3 days), avoid Karatu unless necessary, and prioritize going straight to Ngorongoro Conservation Area, but you can use Karatu as an alternative.
            - TARANGIRE 2 NIGHTS EXIT RULE: If a guest stays in Tarangire for 2 nights, and the next day they have to exit the park (e.g. 6 to 8 hours game drive before exit), they MUST NOT stay in Karatu afterwards. Their next stay MUST be inside the Ngorongoro Conservation Area.
            - SERENGETI TO CRATER RULE: If a guest is coming from Serengeti and has a Ngorongoro Crater activity, priority MUST be to stay in the Ngorongoro Conservation Area, NOT Karatu.
            - NGORONGORO CRATER TO ENDING POINT: When leaving Ngorongoro Crater to end the safari, you MUST provide options to either return directly to Arusha or stay overnight in Karatu.

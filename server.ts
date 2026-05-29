@@ -157,7 +157,16 @@ async function startServer() {
         if (jsonMatch) {
           text = jsonMatch[1].trim();
         }
-        res.json(JSON.parse(text));
+        try {
+          res.json(JSON.parse(text));
+        } catch (parseError: any) {
+          console.error("JSON Parse Error:", parseError, "Text excerpt:", text.substring(0, 100) + "...");
+          if (parseError.message.includes("Unterminated string") || parseError.message.includes("Unexpected end")) {
+            res.status(500).json({ error: "Itinerary Generation Error: The generated itinerary got too long and was cut off. Please try generating a shorter itinerary (fewer days or simpler rules)." });
+          } else {
+            res.status(500).json({ error: "Itinerary Generation Error: Failed to parse complete itinerary data from the AI." });
+          }
+        }
       } else {
         res.status(500).json({ error: "Failed to generate itinerary. Please try again." });
       }
@@ -193,6 +202,8 @@ async function startServer() {
         - They can fly or drive depending on their location and preference (flight_pref: ${flightPref}).
         - Provide rich alternatives for this extra day! E.g., if finishing in Arusha, provide alternatives like an "Overnight in Arusha (Relaxing)" or "Day trip to Arusha National Park", or "Direct flight to Zanzibar". Do not assume they have to fly out from JRO immediately; returning to Arusha for an overnight stay is perfectly valid.
         - Include logical activities for the transfer/flight day.
+        
+        IMPORTANT: Keep descriptions, reasoning, and expert_tips highly concise (1-2 sentences maximum) to prevent truncation errors.
         
         Provide the response in the exact same format as a single day in the itinerary array.
       `;
@@ -286,7 +297,12 @@ async function startServer() {
         if (jsonMatch) {
           text = jsonMatch[1].trim();
         }
-        res.json(JSON.parse(text));
+        try {
+          res.json(JSON.parse(text));
+        } catch (parseError: any) {
+          console.error("JSON Parse Error:", parseError);
+          res.status(500).json({ error: "Failed to parse the extra day response from AI." });
+        }
       } else {
         res.status(500).json({ error: "Failed to generate extra day." });
       }
