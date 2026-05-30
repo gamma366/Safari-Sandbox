@@ -40,6 +40,7 @@ async function startServer() {
         model: "gemini-flash-latest",
         contents: prompt,
         config: {
+          maxOutputTokens: 25000,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -73,7 +74,6 @@ async function startServer() {
                     expert_tip: { type: Type.STRING },
                     alternatives: {
                       type: Type.ARRAY,
-                      minItems: 2,
                       items: {
                         type: Type.OBJECT,
                         properties: {
@@ -212,6 +212,7 @@ async function startServer() {
         model: "gemini-flash-latest",
         contents: prompt,
         config: {
+          maxOutputTokens: 25000,
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
@@ -230,7 +231,6 @@ async function startServer() {
               expert_tip: { type: Type.STRING },
               alternatives: {
                 type: Type.ARRAY,
-                minItems: 2,
                 items: {
                   type: Type.OBJECT,
                   properties: {

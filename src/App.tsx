@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
-import { MapPin, Clock, Sun, Calendar, Compass, Camera, Tent, Loader2, Sparkles, Info, X, ShieldCheck, AlertTriangle, Edit3, Plus, Settings2, Check, ArrowRight, Receipt, Trash2, Users, Printer } from 'lucide-react';
+import { MapPin, Clock, Sun, Calendar, Compass, Camera, Tent, Loader2, Sparkles, Info, X, ShieldCheck, AlertTriangle, Edit3, Plus, Settings2, Check, ArrowRight, Receipt, Trash2, Users, Printer, Bird } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +22,7 @@ const ConsultantTab = lazy(() => import('./components/ConsultantTab').then(m => 
 const INTEREST_OPTIONS = [
   { id: 'wildlife', label: 'General Wildlife', icon: Compass },
   { id: 'big-cats', label: 'Big Cats', icon: Camera },
+  { id: 'bird-watching', label: 'Bird Watching', icon: Bird },
   { id: 'photography', label: 'Photography', icon: Camera },
   { id: 'luxury', label: 'Luxury Lodges', icon: Sparkles },
   { id: 'budget', label: 'Budget/Camping', icon: Tent },
@@ -49,7 +50,8 @@ export const SAFARI_DATABASE = {
     { "id": "park_003", "name": "Tarangire National Park", "region": "Northern Circuit", "landmarks": ["Tarangire River", "Silale Swamp"], "entry_fee_usd": 50, "famous_for": ["Elephants", "Baobab trees", "Dry season wildlife"], "coordinates": { "lat": -3.8333, "lng": 36.0000 } },
     { "id": "park_004", "name": "Lake Manyara National Park", "region": "Northern Circuit", "landmarks": ["Groundwater Forest", "Lake shore"], "entry_fee_usd": 50, "famous_for": ["Tree-climbing lions", "Flamingos", "Forest"], "coordinates": { "lat": -3.3762, "lng": 35.8063 } },
     { "id": "park_005", "name": "Karatu / Highlands", "region": "Northern Circuit", "landmarks": ["Karatu Town", "Highlands"], "entry_fee_usd": 0, "famous_for": ["Coffee plantations", "Gateway to Ngorongoro", "Iraqw culture"], "coordinates": { "lat": -3.3364, "lng": 35.6706 } },
-    { "id": "park_006", "name": "Arusha National Park", "region": "Northern Circuit", "landmarks": ["Mount Meru", "Momella Lakes", "Ngurdoto Crater"], "entry_fee_usd": 50, "famous_for": ["Walking safaris", "Colobus monkeys", "Mount Meru views"], "coordinates": { "lat": -3.2500, "lng": 36.8333 } }
+    { "id": "park_006", "name": "Arusha National Park", "region": "Northern Circuit", "landmarks": ["Mount Meru", "Momella Lakes", "Ngurdoto Crater"], "entry_fee_usd": 50, "famous_for": ["Walking safaris", "Colobus monkeys", "Mount Meru views"], "coordinates": { "lat": -3.2500, "lng": 36.8333 } },
+    { "id": "park_007", "name": "Arusha Town", "region": "Northern Circuit", "landmarks": ["Clock Tower", "Cultural Heritage Center"], "entry_fee_usd": 0, "famous_for": ["Starting point", "Cultural tours", "Dining"], "coordinates": { "lat": -3.3667, "lng": 36.6833 } }
   ],
   "serengeti_zones": [
     { "id": "zone_001", "name": "Serengeti Central (Seronera)", "best_for": ["Big cats", "Year-round wildlife"], "season_best": ["all year"], "notes": "Best base for consistent sightings" },
@@ -76,8 +78,8 @@ export const SAFARI_DATABASE = {
     { "id": "lodge_009", "name": "Kubu Kubu Tented Lodge", "park_id": "park_001", "zone": "zone_001", "category": "mid", "price_usd": { "low": 300, "mid": 450, "high": 650 }, "inside_park": true, "usp": "is strategically placed in Central Serengeti for excellent year-round wildlife viewing" },
     { "id": "lodge_010", "name": "Lemala Nanyukie", "park_id": "park_001", "zone": "zone_001", "category": "luxury", "price_usd": { "low": 600, "mid": 900, "high": 1400 }, "inside_park": true, "usp": "combines contemporary luxury with absolute seclusion in the eastern Serengeti plains" },
     { "id": "lodge_011", "name": "Nyikani Central Camp", "park_id": "park_001", "zone": "zone_001", "category": "mid", "price_usd": { "low": 250, "mid": 400, "high": 600 }, "inside_park": true, "usp": "provides an authentic, intimate safari atmosphere in the heart of the predator-rich areas" },
-    { "id": "lodge_012", "name": "Ndutu Safari Lodge", "park_id": "park_001", "zone": "zone_002", "category": "mid", "price_usd": { "low": 200, "mid": 300, "high": 450 }, "inside_park": true, "usp": "is famous for its resident wildlife and front-row seats to the calving season" },
-    { "id": "lodge_013", "name": "Lake Masek Tented Lodge", "park_id": "park_001", "zone": "zone_002", "category": "luxury", "price_usd": { "low": 500, "mid": 800, "high": 1200 }, "inside_park": true, "usp": "overlooks Lake Masek and offers high-end tented comfort near the migration herds" },
+    { "id": "lodge_012", "name": "Ndutu Safari Lodge", "park_id": "park_002", "zone": "zone_002", "category": "mid", "price_usd": { "low": 200, "mid": 300, "high": 450 }, "inside_park": true, "usp": "is famous for its resident wildlife and front-row seats to the calving season" },
+    { "id": "lodge_013", "name": "Lake Masek Tented Lodge", "park_id": "park_002", "zone": "zone_002", "category": "luxury", "price_usd": { "low": 500, "mid": 800, "high": 1200 }, "inside_park": true, "usp": "overlooks Lake Masek and offers high-end tented comfort near the migration herds" },
     { "id": "lodge_014", "name": "Grumeti Serengeti River Lodge", "park_id": "park_001", "zone": "zone_003", "category": "luxury", "price_usd": { "low": 800, "mid": 1200, "high": 2000 }, "inside_park": true, "usp": "is known for its hippos and prime location for the dramatic river crossings" },
     { "id": "lodge_015", "name": "Mbalageti Serengeti", "park_id": "park_001", "zone": "zone_003", "category": "mid", "price_usd": { "low": 300, "mid": 450, "high": 650 }, "inside_park": true, "usp": "perched on a hill with a 360-degree view of the Serengeti and the Dutch corridor" },
     { "id": "lodge_016", "name": "Mara River Camp", "park_id": "park_001", "zone": "zone_004", "category": "mid", "price_usd": { "low": 400, "mid": 600, "high": 900 }, "inside_park": true, "usp": "is a boutique lodge ideally situated for the high-action Mara River crossings" },
@@ -89,7 +91,9 @@ export const SAFARI_DATABASE = {
     { "id": "lodge_022", "name": "Lake Burunge Tented Lodge", "park_id": "park_003", "category": "budget", "price_usd": { "low": 150, "mid": 220, "high": 300 }, "inside_park": false, "usp": "offers a tranquil lakeside atmosphere perfect for unwinding after a dusty game drive" },
     { "id": "lodge_023", "name": "Ngorongoro Farm House", "park_id": "park_005", "category": "mid", "price_usd": { "low": 200, "mid": 300, "high": 450 }, "inside_park": false, "usp": "features colonial-style bungalows set in hand-manicured gardens on a coffee plantation" },
     { "id": "lodge_024", "name": "Gibb's Farm", "park_id": "park_005", "category": "luxury", "price_usd": { "low": 600, "mid": 900, "high": 1300 }, "inside_park": false, "usp": "is a historic estate renowned for its award-winning organic farm and peaceful sanctuary" },
-    { "id": "lodge_025", "name": "Eileen's Trees Inn", "park_id": "park_005", "category": "budget", "price_usd": { "low": 100, "mid": 150, "high": 220 }, "inside_park": false, "usp": "provides a comfortable and charming garden retreat in the highlands of Karatu" }
+    { "id": "lodge_025", "name": "Eileen's Trees Inn", "park_id": "park_005", "category": "budget", "price_usd": { "low": 100, "mid": 150, "high": 220 }, "inside_park": false, "usp": "provides a comfortable and charming garden retreat in the highlands of Karatu" },
+    { "id": "lodge_026", "name": "The Retreat Ngorongoro", "park_id": "park_005", "category": "luxury", "price_usd": { "low": 500, "mid": 800, "high": 1100 }, "inside_park": false, "usp": "is an exquisite luxury retreat in Karatu offering tranquility, wildlife corridors, and dedicated service" },
+    { "id": "lodge_027", "name": "The African Tulip", "park_id": "park_007", "category": "luxury", "price_usd": { "low": 200, "mid": 250, "high": 350 }, "inside_park": false, "usp": "an elegant and charming boutique hotel located in the heart of Arusha, perfect for pre or post safari stays" }
   ],
   "routes": [
     { "id": "route_001", "from": "Arusha", "to": "Tarangire", "distance_km": 120, "drive_time_hours": 2.5, "road_type": "tarmac" },
@@ -636,7 +640,7 @@ export default function App() {
     // Area to Park mapping for common destinations that aren't exact park names
     const areaMapping: Record<string, string> = {
       'olduvai': 'park_002', // Olduvai is in Ngorongoro
-      'ndutu': 'park_001',   // Ndutu is in Serengeti/Ngorongoro border but mapped to Serengeti here
+      'ndutu': 'park_002',   // Ndutu is in Ngorongoro Conservation Area
       'karatu': 'park_005',
       'mto wa mbu': 'park_004',
       'lake eyasi': 'park_005',
@@ -693,7 +697,7 @@ export default function App() {
       // 3. Identify current target park/area for other activities
       const areaMapping: Record<string, string> = {
         'olduvai': 'park_002',
-        'ndutu': 'park_001',
+        'ndutu': 'park_002',
         'karatu': 'park_005',
         'mto wa mbu': 'park_004',
         'seronera': 'park_001',
@@ -894,7 +898,8 @@ export default function App() {
              - Explain the pros/cons of their flight choice in "flight_logic_summary".
            - NEVER create straight-line or unrealistic travel
            - NO DIRECT ARUSHA TO KARATU: There is no such thing as a direct drive from Arusha to Karatu with nothing to do. You MUST include a game drive in Tarangire or Lake Manyara in between. Arusha -> (Tarangire or Manyara game drive) -> Karatu.
-           - TARANGIRE TO KARATU: For short safaris (<= 3 days), Karatu is the BEST stop from Tarangire before Ngorongoro. You MUST implement an overnight layout in Karatu or provide it as a primary alternative route option. For longer safaris (> 3 days), avoid Karatu unless necessary, and prioritize going straight to Ngorongoro Conservation Area, but you can use Karatu as an alternative.
+           - TARANGIRE TO KARATU: You MUST NOT drive from Tarangire to Karatu without an activity in between. If traveling from Tarangire to Karatu, the day's activities MUST include a visit to Lake Manyara National Park or a cultural visit (e.g., Mto wa Mbu). For short safaris (<= 3 days), Karatu is the BEST stop from Tarangire before Ngorongoro. For longer safaris (> 3 days), avoid Karatu unless necessary, and prioritize going straight to Ngorongoro Conservation Area, but you can use Karatu as an alternative.
+           - ALTERNATIVES: You MUST provide at least 3 distinct and rich alternative route options or experiences for EACH DAY.
            - TARANGIRE 2 NIGHTS EXIT RULE: If a guest stays in Tarangire for 2 nights, and the next day they have to exit the park (e.g. 6 to 8 hours game drive before exit), they MUST NOT stay in Karatu afterwards. Their next stay MUST be inside the Ngorongoro Conservation Area.
            - SERENGETI TO CRATER RULE: If a guest is coming from Serengeti and has a Ngorongoro Crater activity, priority MUST be to stay in the Ngorongoro Conservation Area, NOT Karatu.
            - NGORONGORO CRATER TO ENDING POINT: When leaving Ngorongoro Crater to end the safari, you MUST provide options to either return directly to Arusha or stay overnight in Karatu.
@@ -919,6 +924,9 @@ export default function App() {
            - NEVER stay at Gibb's Farm (Karatu) if the day involves visiting Olduvai Gorge and moving toward Serengeti. That's a 3-hour backtrack. 
            - If visiting Olduvai or Crater, stay at Ngorongoro Serena/Crater Lodge (Inside) or Ndutu (Park exit). 
            - Stay at Gibb's Farm ONLY if the day ends in Karatu (Repositioning day).
+           - PREFERRED in Karatu: If a user has "luxury" preference or just needs a highly recommended place in Karatu, heavily PREFER "The Retreat Ngorongoro". 
+           - PREFERRED in Arusha: If a day starts/ends in Arusha and requires a stay, strongly prefer "The African Tulip".
+           - NEGATIVE GUIDANCE: If going to Ndutu, write the location precisely as 'Ndutu' instead of general 'Serengeti'.
            - CATEGORIZE lodges: 
              - "Inside the Park" (inside_park: true) - Usually more expensive, includes park fees for the night.
              - "Outside the Park" (inside_park: false) - Usually in nearby towns like Karatu or Mto wa Mbu.
@@ -939,6 +947,7 @@ export default function App() {
            - Provide an expert_tip for each day (1-2 sentences). TONE: Highlight a niche detail or a 'pro-tip' that only a local guide would know (e.g., "Look for the specific leopard that frequents the sausage tree near the Seronera river").
         12. TANZANIA PARK PERMIT LOGIC & TIME CONFLICTS (24-HOUR RULE):
            - Standard permits in Tanzania National Parks (TANAPA) and Ngorongoro (NCAA) are valid for 24 hours from time of entry.
+           - NGORONGORO TRANSIT FEE: If the client goes and returns through the Ngorongoro Conservation Area (e.g. Arusha -> Serengeti -> Arusha by road) a Ngorongoro Transit Fee MUST be paid twice.
            - ENTRY/EXIT TIMES: You MUST track entry and exit times.
              - If entering Ngorongoro Loduare Gate at 2:00 PM on Day 2, the permit expires at 2:00 PM on Day 3.
              - Staying 2 nights in Serengeti requires 2 x 24h fees.
@@ -1019,7 +1028,7 @@ export default function App() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-7xl font-serif text-safari-text mb-6 drop-shadow-sm tracking-tight"
+            className="text-6xl md:text-[6rem] lg:text-[6rem] leading-none font-serif text-safari-text mb-6 drop-shadow-sm tracking-widest"
           >
             Tanzania Safari Planner
           </motion.h1>
@@ -1027,7 +1036,7 @@ export default function App() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-lg md:text-xl text-safari-text/80 font-light tracking-widest uppercase text-sm md:text-base max-w-2xl"
+            className="text-lg md:text-xl leading-relaxed text-safari-text/80 font-light tracking-widest uppercase max-w-2xl"
           >
             Craft your perfect journey through the Serengeti, Ngorongoro, and beyond.
           </motion.p>
@@ -1138,18 +1147,18 @@ export default function App() {
                 <Button 
                   onClick={generateItinerary} 
                   disabled={loading}
-                  className="w-full h-14 rounded-none bg-safari-accent hover:bg-safari-accent-hover text-white font-medium text-sm tracking-widest uppercase shadow-md transition-all relative overflow-hidden group"
+                  className="w-full h-14 rounded-full bg-safari-accent hover:bg-safari-accent/90 text-white font-medium text-base tracking-[0.2em] uppercase shadow-md transition-all relative overflow-hidden group border border-safari-accent/50"
                 >
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                   <span className="relative flex items-center justify-center">
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       Crafting Itinerary...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="mr-2 h-4 w-4" />
+                      <Sparkles className="mr-2 h-5 w-5" />
                       Generate Itinerary
                     </>
                   )}
@@ -1212,12 +1221,15 @@ export default function App() {
                               <Button 
                                 variant="outline"
                                 className="rounded-xl border-safari-accent/20 hover:bg-safari-accent/5 flex-1 md:flex-auto flex items-center justify-center gap-2"
-                                onClick={() => window.print()}
-                              />
-                            }>
-                              <Printer className="w-4 h-4" />
-                              Print PDF
-                            </TooltipTrigger>
+                                onClick={() => {
+                                  // Add tiny delay to ensure everything is rendered, then print
+                                  setTimeout(() => window.print(), 100);
+                                }}
+                              >
+                                <Printer className="w-4 h-4" />
+                                Print PDF
+                              </Button>
+                            } />
                             <TooltipContent>Download your planned adventure</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -1232,9 +1244,9 @@ export default function App() {
                           <div className="absolute top-0 right-0 w-64 h-64 bg-safari-accent/20 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
                           <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <div>
-                              <Badge className="bg-safari-accent text-white rounded-none uppercase tracking-widest text-[10px] mb-4 px-3 py-1">Adventure Summary</Badge>
-                              <h2 className="text-4xl lg:text-5xl font-serif leading-tight mb-4 tracking-tight drop-shadow-sm text-[#FCFBFA]">The Wild Heart of Tanzania</h2>
-                              <p className="text-[#FCFBFA]/80 max-w-xl italic font-light tracking-wide">"{itinerary.summary.route_overview}"</p>
+                              <Badge className="bg-safari-accent text-white rounded-none uppercase tracking-[0.2em] text-[10px] mb-4 px-3 py-1">Adventure Summary</Badge>
+                              <h2 className="text-4xl md:text-5xl lg:text-[56px] font-serif leading-tight mb-4 tracking-widest drop-shadow-sm text-[#FCFBFA]">The Wild Heart of Tanzania</h2>
+                              <p className="text-lg md:text-xl leading-relaxed text-[#FCFBFA]/80 max-w-xl italic font-light tracking-wide">"{itinerary.summary.route_overview}"</p>
                             </div>
                             <div className="flex flex-col items-end gap-2 text-right">
                               <span className="text-xs font-medium uppercase tracking-[0.2em] opacity-60 text-safari-accent">Base Estimate</span>
@@ -1282,8 +1294,8 @@ export default function App() {
                                 <Sun className="w-6 h-6 text-safari-accent" />
                               </div>
                               <div>
-                                <h3 className="font-serif text-lg text-safari-text mb-1">Travel Strategy</h3>
-                                <p className="text-sm text-safari-muted leading-relaxed">
+                                <h3 className="font-serif text-xl md:text-2xl text-safari-text mb-1 tracking-wide">Travel Strategy</h3>
+                                <p className="text-base text-safari-muted leading-[1.8]">
                                   {itinerary.summary.flight_logic_summary}
                                 </p>
                               </div>
@@ -1305,11 +1317,11 @@ export default function App() {
                                 <AlertTriangle className="w-6 h-6 text-amber-700" />
                               </div>
                               <div>
-                                <h4 className="font-bold text-amber-900 mb-1">Safari Budget Transparency</h4>
-                                <p className="text-xs text-amber-800 leading-relaxed max-w-md">The base estimate is {itinerary.pricing_estimate.total_range} for 2 adults over {itinerary.itinerary.length} days. Excludes international flights. <strong>See the Cost Summary tab for exact group pricing with children and room types.</strong></p>
+                                <h4 className="font-bold text-lg text-amber-900 mb-1 tracking-wide">Safari Budget Transparency</h4>
+                                <p className="text-sm md:text-base text-amber-800 leading-[1.8] max-w-md">The base estimate is {itinerary.pricing_estimate.total_range} for 2 adults over {itinerary.itinerary.length} days. Excludes international flights. <strong className="font-black">See the Cost Summary tab for exact group pricing with children and room types.</strong></p>
                               </div>
                             </div>
-                            <Button className="bg-amber-700 hover:bg-amber-800 text-white rounded-xl h-12 px-8 shrink-0">
+                            <Button className="bg-safari-accent hover:bg-safari-accent-hover text-white text-base md:text-lg rounded-full h-14 px-8 shrink-0 tracking-widest shadow-md transition-all">
                               Book Consultation
                             </Button>
                           </div>
@@ -1329,7 +1341,7 @@ export default function App() {
                                       <span className="font-serif text-3xl text-safari-text leading-none">{dayPlan.day}</span>
                                     </div>
                                     <div className="pl-2">
-                                      <h3 className="text-xl md:text-2xl font-serif text-safari-text group-hover:text-safari-accent transition-colors">
+                              <h3 className="text-2xl md:text-3xl font-serif font-medium tracking-wide text-safari-text group-hover:text-safari-accent transition-colors relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[2px] after:bottom-0 after:left-0 after:bg-safari-accent after:origin-bottom-right after:transition-transform after:duration-300 group-hover:after:scale-x-100 group-hover:after:origin-bottom-left">
                                         {dayPlan.from} → {dayPlan.to}
                                       </h3>
                                       <div className="flex gap-4 mt-2">
@@ -1349,10 +1361,10 @@ export default function App() {
                             <AccordionContent className="pt-4 pb-8 space-y-6">
                               <div className="grid md:grid-cols-2 gap-8 px-4">
                                   <div className="space-y-4">
-                                    <h4 className="text-lg font-serif text-safari-accent flex items-center gap-2">
-                                      <Sparkles className="w-5 h-5" /> Detailed Adventure Plan
+                                    <h4 className="text-xl md:text-2xl font-serif font-medium tracking-wide text-safari-accent flex items-center gap-2">
+                                      <Sparkles className="w-6 h-6" /> Detailed Adventure Plan
                                     </h4>
-                                    <p className="text-safari-text leading-relaxed">
+                                    <p className="text-lg md:text-xl leading-[1.8] text-safari-text">
                                       {dayPlan.detailed_description}
                                     </p>
                                     
@@ -1379,12 +1391,12 @@ export default function App() {
                                     </div>
                                   </div>
                                 <div className="space-y-4">
-                                  <h4 className="text-lg font-serif text-safari-accent flex items-center gap-2">
-                                    <Camera className="w-5 h-5" /> Highlights & Activities
+                                  <h4 className="text-xl md:text-2xl font-serif font-medium tracking-wide text-safari-accent flex items-center gap-2">
+                                    <Camera className="w-6 h-6" /> Highlights & Activities
                                   </h4>
-                                  <ul className="grid grid-cols-1 gap-3">
+                                  <ul className="grid grid-cols-1 gap-4 mt-2">
                                     {dayPlan.activities.map((act, i) => (
-                                      <li key={i} className="flex items-center gap-3 text-sm text-safari-text">
+                                      <li key={i} className="flex items-center gap-3 text-lg leading-relaxed text-safari-text">
                                         <div className="w-1.5 h-1.5 rounded-full bg-safari-accent" />
                                         {act}
                                       </li>
@@ -1650,23 +1662,23 @@ export default function App() {
                                 {!addDayConfirm ? (
                                     <Button 
                                       variant="outline" 
-                                      className="w-full h-16 rounded-2xl border-dashed border-2 border-safari-accent/30 text-safari-accent hover:bg-safari-accent hover:text-white transition-all font-bold text-lg shadow-sm"
+                                      className="w-full h-16 rounded-full border-dashed border-2 border-safari-accent/40 text-safari-accent hover:bg-safari-accent hover:text-white transition-all font-bold text-lg shadow-sm tracking-wide"
                                       onClick={() => setAddDayConfirm(true)}
                                     >
                                       <Plus className="w-5 h-5 mr-3" /> Add an Extra Day
                                     </Button>
                                 ) : (
-                                    <div className="bg-safari-accent/5 border border-safari-accent/20 p-8 rounded-2xl text-center shadow-inner max-w-2xl mx-auto">
-                                        <h4 className="text-xl font-serif text-safari-text font-bold mb-3">Add Extra Day</h4>
-                                        <p className="text-safari-muted mb-6 leading-relaxed">
+                                    <div className="bg-safari-accent/5 border border-safari-accent/20 p-8 rounded-3xl text-center shadow-inner max-w-2xl mx-auto">
+                                        <h4 className="text-2xl font-serif text-safari-text tracking-wide mb-3">Add Extra Day</h4>
+                                        <p className="text-safari-muted mb-6 leading-relaxed text-lg">
                                             We'll analyze your current ending location and thoughtfully generate an additional day, ensuring you end up seamlessly at a logical departure point (e.g., Arusha, Kilimanjaro, or Zanzibar).
                                         </p>
                                         <div className="flex justify-center gap-4">
-                                            <Button variant="outline" className="rounded-xl px-6 h-12 font-bold" onClick={() => setAddDayConfirm(false)}>
+                                            <Button variant="outline" className="rounded-full px-8 h-12 font-bold tracking-wide" onClick={() => setAddDayConfirm(false)}>
                                                 Cancel
                                             </Button>
                                             <Button 
-                                                className="rounded-xl px-6 h-12 bg-safari-accent text-white font-bold hover:bg-safari-accent/90" 
+                                                className="rounded-full px-8 h-12 bg-safari-accent text-white font-bold hover:bg-safari-accent/90 tracking-wide" 
                                                 onClick={handleAddExtraDay}
                                                 disabled={isAddingDay}
                                             >
@@ -1744,8 +1756,8 @@ export default function App() {
                   <div className="w-20 h-20 bg-safari-bg rounded-full flex items-center justify-center mb-6">
                     <Compass className="w-10 h-10 text-safari-accent opacity-50" />
                   </div>
-                  <h3 className="text-2xl font-serif text-safari-text mb-2">Ready to Explore?</h3>
-                  <p className="text-safari-muted max-w-md">
+                  <h3 className="text-4xl md:text-5xl lg:text-[56px] font-serif text-safari-text mb-2 tracking-widest leading-tight">Ready to Explore?</h3>
+                  <p className="text-lg md:text-xl leading-relaxed text-safari-muted max-w-md">
                     Select your preferences on the left and let our AI craft a realistic, geographically accurate safari itinerary tailored just for you.
                   </p>
                 </motion.div>
@@ -1768,7 +1780,7 @@ export default function App() {
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
-                <h2 className="text-3xl font-serif mb-2">{selectedDay.from} to {selectedDay.to}</h2>
+                <h2 className="text-4xl md:text-5xl lg:text-[56px] font-serif leading-tight mb-2 tracking-widest">{selectedDay.from} to {selectedDay.to}</h2>
                 <div className="flex flex-wrap gap-4 text-white/80 text-sm">
                   <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {selectedDay.drive_time} Drive</span>
                   <span className="flex items-center gap-1.5"><Sun className="w-4 h-4" /> {selectedDay.departure_time} Departure</span>
@@ -1777,25 +1789,25 @@ export default function App() {
 
               <div className="p-8 space-y-8 overflow-y-auto max-h-[70vh]">
                 <section>
-                  <h3 className="text-lg font-serif text-safari-accent mb-3 flex items-center gap-2">
+                  <h3 className="text-xl md:text-2xl font-serif font-medium tracking-wide text-safari-accent mb-3 flex items-center gap-2">
                     <Sparkles className="w-5 h-5" />
                     What to Expect
                   </h3>
-                  <p className="text-safari-text leading-relaxed">
+                  <p className="text-lg md:text-xl leading-[1.6] text-safari-text">
                     {selectedDay.detailed_description}
                   </p>
                 </section>
 
                 <section className="bg-safari-bg/50 p-6 rounded-2xl border border-safari-accent/10">
                   <h3 className="text-sm font-semibold uppercase tracking-wider text-safari-muted mb-2">Our Guide's Reasoning</h3>
-                  <p className="text-safari-text italic">
+                  <p className="text-lg md:text-xl leading-[1.6] text-safari-text italic">
                     "{selectedDay.reasoning}"
                   </p>
                 </section>
 
                 {(selectedDay.permit_entry || selectedDay.permit_exit_deadline || selectedDay.permit_advisory) && (
                   <section className="bg-amber-50/50 p-6 rounded-2xl border border-amber-200">
-                    <h3 className="text-amber-800 font-serif text-lg mb-3 flex items-center gap-2">
+                    <h3 className="text-amber-800 font-serif text-xl md:text-2xl tracking-wide mb-3 flex items-center gap-2">
                        <ShieldCheck className="w-5 h-5" />
                        Park Permit Logistics
                     </h3>
@@ -1828,7 +1840,7 @@ export default function App() {
                 )}
 
                 <section>
-                  <h3 className="text-lg font-serif text-safari-accent mb-3">Today's Schedule</h3>
+                  <h3 className="text-xl md:text-2xl tracking-wide font-serif text-safari-accent mb-3">Today's Schedule</h3>
                   <ul className="space-y-3">
                     {selectedDay.activities.map((activity, i) => (
                       <li key={i} className="flex items-start gap-3 text-safari-text group">
@@ -1843,7 +1855,7 @@ export default function App() {
 
                 <section>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-serif text-safari-accent flex items-center gap-2">
+                    <h3 className="text-xl md:text-2xl tracking-wide font-serif text-safari-accent flex items-center gap-2">
                       <Tent className="w-5 h-5" />
                       Accommodation
                     </h3>
@@ -1946,10 +1958,10 @@ export default function App() {
               {activityConfirm?.action === 'add' && " This will enrich your safari experience and we will automatically adjust your guide's advice."}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex gap-2 sm:justify-end mt-4">
-            <Button variant="outline" className="rounded-xl" onClick={() => setActivityConfirm(null)}>Cancel</Button>
+          <DialogFooter className="flex gap-4 sm:justify-end mt-6">
+            <Button variant="outline" className="rounded-full px-8 h-12 font-bold tracking-wide border-safari-accent/40 hover:bg-safari-bg" onClick={() => setActivityConfirm(null)}>Cancel</Button>
             <Button 
-                className="rounded-xl bg-safari-accent hover:bg-safari-accent/90" 
+                className="rounded-full px-8 h-12 bg-safari-accent hover:bg-safari-accent/90 text-white font-bold tracking-wide shadow-md" 
                 onClick={() => {
                     if (activityConfirm) {
                         performActivityToggle(activityConfirm.day, activityConfirm.activity);

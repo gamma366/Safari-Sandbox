@@ -189,7 +189,7 @@ export function SafariMap({ itinerary }: SafariMapProps) {
       
       const marker = L.circleMarker([leg.toCoords.lat, leg.toCoords.lng], {
           radius: 8,
-          fillColor: "#A88655",
+          fillColor: "#059669",
           color: "#ffffff",
           weight: 2,
           opacity: 1,
@@ -223,7 +223,7 @@ export function SafariMap({ itinerary }: SafariMapProps) {
     const time = (dist / speed).toFixed(1);
     const curvePoints = leg.curvePoints;
     
-    const color = leg.type === 'flight' ? '#A88655' : (leg.type === 'game_drive' ? '#8D6F44' : '#1C1B1A');
+    const color = leg.type === 'flight' ? '#f97316' : (leg.type === 'game_drive' ? '#16a34a' : '#2563EB');
     const dashArray = leg.type === 'flight' ? '6, 8' : (leg.type === 'game_drive' ? '4, 4' : undefined);
     
     const options = {
@@ -275,15 +275,18 @@ export function SafariMap({ itinerary }: SafariMapProps) {
         
         {/* Map Legend Overlay */}
         <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg border border-white/20">
-            <h3 className="font-serif text-lg text-safari-accent mb-2">Interactive Route Map</h3>
+            <h3 className="font-serif text-xl md:text-2xl tracking-wide text-safari-accent mb-2">Interactive Route Map</h3>
             <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-safari-text">
+                <div className="flex items-center gap-2 text-base text-safari-text">
                     <div className="w-4 h-1 bg-blue-600 rounded-full"></div> Drive Route
                 </div>
-                <div className="flex items-center gap-2 text-sm text-safari-text">
+                <div className="flex items-center gap-2 text-base text-safari-text">
+                    <div className="w-4 h-1 border-b-2 border-green-600 border-dashed"></div> Game Drive
+                </div>
+                <div className="flex items-center gap-2 text-base text-safari-text">
                     <div className="w-4 h-1 border-b-2 border-orange-500 border-dashed"></div> Flight Path
                 </div>
-                <div className="flex items-center gap-2 text-sm text-safari-text">
+                <div className="flex items-center gap-2 text-base text-safari-text">
                     <div className="w-3 h-3 bg-emerald-600 rounded-full border-2 border-white"></div> Lodge/Camp
                 </div>
             </div>
@@ -291,7 +294,7 @@ export function SafariMap({ itinerary }: SafariMapProps) {
 
         {/* Day Selector Overlay */}
         <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg border border-white/20 w-64 max-h-[calc(100%-2rem)] flex flex-col">
-            <h3 className="font-serif text-lg text-safari-accent mb-3">Select a Day</h3>
+            <h3 className="font-serif text-xl md:text-2xl tracking-wide text-safari-accent mb-3">Select a Day</h3>
             {isLoadingRoutes ? (
                 <div className="text-sm text-gray-500 animate-pulse text-center py-4">Calculating Routes...</div>
             ) : (

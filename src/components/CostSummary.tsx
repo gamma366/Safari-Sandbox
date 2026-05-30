@@ -54,7 +54,7 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
     actList
   } = useMemo(() => {
     const accommodationsMap = new Map<string, { nights: number; pricePerNight: number; name: string }>();
-    const parkMap = new Map<string, { park: string; feePerPerson: number; concessionPerPerson: number; days: number }>();
+    const parkMap = new Map<string, { park: string; feePerPerson: number; concessionPerPerson: number; days: number; transitFeePerPerson?: number; transitDays?: number }>();
     const flights: any[] = [];
     const optionalActivities: any[] = [];
     let craterFeeTracker = false;
@@ -81,14 +81,14 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
       // Park Fees
       if (dbLodge) {
          const park = SAFARI_DATABASE.parks.find(p => p.id === dbLodge.park_id) as any;
-         if (park && park.name.toLowerCase() !== "karatu / highlands") {
+         if (park && park.name.toLowerCase() !== "karatu / highlands" && park.name.toLowerCase() !== "arusha town") {
              const entry = park.entry_fee_usd || 0;
              const concession = dbLodge.inside_park ? (entry > 60 ? 71 : 59) : 0; 
 
              if (parkMap.has(park.name)) {
                parkMap.get(park.name)!.days += 1;
              } else {
-               parkMap.set(park.name, { park: park.name, feePerPerson: entry, concessionPerPerson: concession, days: 1 });
+               parkMap.set(park.name, { park: park.name, feePerPerson: entry, concessionPerPerson: concession, days: 1, transitFeePerPerson: 0, transitDays: 0 });
              }
          }
       }
@@ -123,18 +123,54 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
          optionalActivities.push({ name: "Maasai Village Cultural Visit", costPerPerson: 40, desc: "Community contribution & cultural tour" });
       }
 
-      // Flights
+      // Flights and Transit Fee
       const flyKeywords = ['flight', 'fly', 'airstrip'];
       const drivesStr = (day.drive_time || '').toLowerCase();
       const toStr = (day.to || '').toLowerCase();
       const fromStr = (day.from || '').toLowerCase();
       
-      if (flyKeywords.some(k => drivesStr.includes(k) || activitiesStr.includes(k) || toStr.includes(k) || fromStr.includes(k))) {
+      const isFlight = flyKeywords.some(k => drivesStr.includes(k) || activitiesStr.includes(k) || toStr.includes(k) || fromStr.includes(k));
+      
+      if (isFlight) {
          // Prevent duplicate flight for the same route
          const routeDesc = `${day.from} to ${day.to} Flight`;
          if (!flights.some(f => f.route === routeDesc)) {
             flights.push({ route: routeDesc, costPerPerson: 360 });
          }
+      }
+
+      // Ngorongoro Transit Fee
+      if (!isFlight) {
+          const isWestStr = (str: string) => str.includes('serengeti') || str.includes('kogatende');
+          const isEastStr = (str: string) => str.includes('karatu') || str.includes('arusha') || str.includes('tarangire') || str.includes('manyara') || str.includes('mto wa mbu');
+          
+          let fromIsWest = isWestStr(fromStr);
+          let fromIsEast = isEastStr(fromStr);
+          let toIsWest = isWestStr(toStr);
+          let toIsEast = isEastStr(toStr);
+
+          // Fallback to check lodge location if 'to' is vague (like 'ngorongoro')
+          if (dbLodge && !toIsWest && !toIsEast) {
+              const lodgePark = SAFARI_DATABASE.parks.find(p => p.id === dbLodge.park_id);
+              if (lodgePark) {
+                  const pName = lodgePark.name.toLowerCase();
+                  if (isWestStr(pName)) toIsWest = true;
+                  if (isEastStr(pName)) toIsEast = true;
+              }
+              const lName = dbLodge.name.toLowerCase();
+              if (isWestStr(lName)) toIsWest = true;
+              if (isEastStr(lName)) toIsEast = true;
+          }
+
+          if ((fromIsEast && toIsWest) || (fromIsWest && toIsEast)) {
+             const parkName = "Ngorongoro Conservation Area";
+             if (parkMap.has(parkName)) {
+                 parkMap.get(parkName)!.transitDays = (parkMap.get(parkName)!.transitDays || 0) + 1;
+                 parkMap.get(parkName)!.transitFeePerPerson = 71; // Ensure fee is set
+             } else {
+                 parkMap.set(parkName, { park: parkName, feePerPerson: 0, concessionPerPerson: 0, transitFeePerPerson: 71, days: 0, transitDays: 1 });
+             }
+          }
       }
     });
 
@@ -184,9 +220,24 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
     const adultConcessionTotal = item.concessionPerPerson * adults * item.days;
     const childConcessionTotal = (item.concessionPerPerson * childParkDiscount) * children * item.days;
 
-    const total = adultEntryTotal + childEntryTotal + adultConcessionTotal + childConcessionTotal;
+    // Transit fees
+    const transitFeePerPerson = item.transitFeePerPerson || 0;
+    const transitDays = item.transitDays || 0;
+    const adultTransitTotal = transitFeePerPerson * adults * transitDays;
+    const childTransitTotal = (transitFeePerPerson * childParkDiscount) * children * transitDays;
+
+    const total = adultEntryTotal + childEntryTotal + adultConcessionTotal + childConcessionTotal + adultTransitTotal + childTransitTotal;
     subtotal += total;
-    return { ...item, total, childEntryTotal, childConcessionTotal };
+    return { 
+      ...item, 
+      total, 
+      adultEntryTotal, 
+      childEntryTotal, 
+      adultConcessionTotal, 
+      childConcessionTotal, 
+      childTransitTotal, 
+      adultTransitTotal 
+    };
   });
   const parkTotal = formattedParkList.reduce((acc, curr) => acc + curr.total, 0);
 
@@ -357,14 +408,40 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
       </Section>
 
       <Section id="parkfees" title="4. Park & Concession Fees" total={formatMoney(parkTotal)}>
-        {formattedParkList.map((item, i) => (
-          <TableRow 
-            key={i} 
-            label={item.park} 
-            desc={`${item.days} Days | Park Entry: ${formatMoney(item.feePerPerson)} pp/day | Lodge: ${formatMoney(item.concessionPerPerson)} pp/day`} 
-            cost={formatMoney(item.total)} 
-          />
-        ))}
+        {formattedParkList.map((item, i) => {
+          return (
+            <TableRow 
+              key={i} 
+              label={item.park} 
+              desc={
+                <div className="flex flex-col gap-2 mt-2 font-mono text-xs">
+                  {item.feePerPerson > 0 && item.days > 0 && (
+                     <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-safari-text">Park Fee ({item.days} days @ {formatMoney(item.feePerPerson)}/day)</span>
+                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.feePerPerson)} = {formatMoney(item.adultEntryTotal)}</span>}
+                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.feePerPerson * childParkDiscount)} = {formatMoney(item.childEntryTotal)}</span>}
+                     </div>
+                  )}
+                  {item.concessionPerPerson > 0 && item.days > 0 && (
+                     <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-safari-text">Concession Fee ({item.days} days @ {formatMoney(item.concessionPerPerson)}/day)</span>
+                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.concessionPerPerson)} = {formatMoney(item.adultConcessionTotal)}</span>}
+                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.concessionPerPerson * childParkDiscount)} = {formatMoney(item.childConcessionTotal)}</span>}
+                     </div>
+                  )}
+                  {item.transitDays > 0 && item.transitFeePerPerson > 0 && (
+                     <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-safari-text">Transit Fee ({item.transitDays} transits @ {formatMoney(item.transitFeePerPerson)}/transit)</span>
+                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.transitFeePerPerson)} = {formatMoney(item.adultTransitTotal)}</span>}
+                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.transitFeePerPerson * childParkDiscount)} = {formatMoney(item.childTransitTotal)}</span>}
+                     </div>
+                  )}
+                </div>
+              } 
+              cost={formatMoney(item.total)} 
+            />
+          );
+        })}
         {formattedParkList.length === 0 && (
             <p className="text-safari-muted text-sm italic">No park fees identified in current selection.</p>
         )}

@@ -84,16 +84,16 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
       
       {/* Dynamic Tour Operator Recommendations */}
       <div className="space-y-6">
-        <div className="text-center md:text-left space-y-2 mb-8">
-            <h2 className="text-3xl font-serif text-safari-text">Recommended Tour Operators</h2>
-            <p className="text-safari-muted">Based on your {level} preference and selected interests, we've matched you with these verified local experts.</p>
+        <div className="text-center md:text-left space-y-4 mb-8">
+            <h2 className="text-4xl md:text-5xl lg:text-[56px] font-serif text-safari-text leading-tight tracking-widest">Recommended Tour Operators</h2>
+            <p className="text-lg md:text-xl leading-relaxed text-safari-muted">Based on your {level} preference and selected interests, we've matched you with these verified local experts.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayedCompanies.map(company => (
                 <Card key={company.id} className="border-safari-accent/20 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow bg-white">
                     <CardHeader className="pb-3 border-b border-safari-accent/10 bg-safari-bg/30">
-                        <CardTitle className="text-lg font-serif text-safari-text">{company.name}</CardTitle>
+                        <CardTitle className="text-xl md:text-2xl font-serif text-safari-text tracking-wide">{company.name}</CardTitle>
                         <div className="flex flex-wrap gap-2 mt-2">
                             {company.level.map(lv => (
                                 <Badge key={lv} variant="outline" className="text-xs border-safari-accent/30 capitalize">{lv}</Badge>
@@ -101,7 +101,7 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
                         </div>
                     </CardHeader>
                     <CardContent className="pt-4 flex-1 flex flex-col">
-                        <p className="text-sm text-safari-muted mb-6 flex-1">{company.description}</p>
+                        <p className="text-base text-safari-muted leading-[1.6] mb-6 flex-1">{company.description}</p>
                         
                         <div className="space-y-2 mb-6">
                             <span className="flex items-center gap-2 text-xs text-safari-muted">
@@ -113,7 +113,7 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
                         </div>
 
                         <Button 
-                            className="w-full bg-safari-accent/10 text-safari-accent hover:bg-safari-accent hover:text-white transition-colors"
+                            className="w-full bg-safari-accent/10 border border-safari-accent/20 text-safari-accent hover:bg-safari-accent hover:text-white transition-all text-base font-medium py-6 rounded-full tracking-wide uppercase"
                             onClick={() => window.open(`mailto:${company.contact}?subject=Safari Inquiry from your app&body=Hello, I am interested in booking a ${level} safari.`)}
                         >
                             <Mail className="w-4 h-4 mr-2" /> Contact Operator
@@ -132,10 +132,10 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
                  <Users className="w-12 h-12 text-white/50" />
             </div>
             <div className="text-center md:text-left flex-1">
-                <Badge className="bg-white/20 text-white border-none mb-4 px-3 py-1">General Platform Advice</Badge>
-                <h2 className="text-4xl font-serif leading-tight mb-2">Safari Planning Assistant</h2>
-                <p className="text-white/80 max-w-xl italic mb-4">"Not sure which operator to choose? Just want general advice before reaching out? Send an inquiry and we'll help point you in the right direction."</p>
-                <Button className="bg-white text-safari-accent hover:bg-white/90 rounded-xl" onClick={() => window.open(`mailto:general-advice@safariexperts.com`)}>
+                <Badge className="bg-white/20 text-white border-none mb-4 px-3 py-1 uppercase tracking-widest text-[10px]">General Platform Advice</Badge>
+                <h2 className="text-4xl md:text-5xl font-serif leading-tight mb-4 tracking-widest">Safari Planning Assistant</h2>
+                <p className="text-lg md:text-xl leading-relaxed text-white/80 max-w-xl italic mb-6">"Not sure which operator to choose? Just want general advice before reaching out? Send an inquiry and we'll help point you in the right direction."</p>
+                <Button className="bg-white text-safari-accent hover:bg-white/90 rounded-full shadow-md text-base md:text-lg h-14 px-8 font-medium tracking-wide uppercase transition-all" onClick={() => window.open(`mailto:general-advice@safariexperts.com`)}>
                     Get General Advice <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
             </div>
@@ -143,22 +143,22 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
       </div>
 
       <div className="bg-white rounded-3xl p-8 border border-safari-accent/10 shadow-sm mt-8">
-        <h3 className="text-xl font-serif text-safari-text mb-6">Why Book With These Operators?</h3>
-        <div className="grid md:grid-cols-3 gap-6">
-            <div className="flex flex-col gap-2">
-                <CheckCircle2 className="w-6 h-6 text-green-600" />
-                <h4 className="font-bold text-safari-text">Verified Excellence</h4>
-                <p className="text-sm text-safari-muted">We only recommend operators with outstanding track records and reviews.</p>
+        <h3 className="text-2xl md:text-3xl font-serif text-safari-text tracking-wide mb-8">Why Book With These Operators?</h3>
+        <div className="grid md:grid-cols-3 gap-8">
+            <div className="flex flex-col gap-3">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+                <h4 className="font-bold text-lg tracking-wide text-safari-text">Verified Excellence</h4>
+                <p className="text-base text-safari-muted leading-[1.6]">We only recommend operators with outstanding track records and reviews.</p>
             </div>
-            <div className="flex flex-col gap-2">
-                <ShieldCheck className="w-6 h-6 text-blue-600" />
-                <h4 className="font-bold text-safari-text">Fully Protected</h4>
-                <p className="text-sm text-safari-muted">Selected operators offer comprehensive financial security and clear booking policies.</p>
+            <div className="flex flex-col gap-3">
+                <ShieldCheck className="w-8 h-8 text-blue-600" />
+                <h4 className="font-bold text-lg tracking-wide text-safari-text">Fully Protected</h4>
+                <p className="text-base text-safari-muted leading-[1.6]">Selected operators offer comprehensive financial security and clear booking policies.</p>
             </div>
-            <div className="flex flex-col gap-2">
-                <Tent className="w-6 h-6 text-amber-600" />
-                <h4 className="font-bold text-safari-text">Expert On-Ground Support</h4>
-                <p className="text-sm text-safari-muted">All partners have local offices providing 24/7 assistance during your trip.</p>
+            <div className="flex flex-col gap-3">
+                <Tent className="w-8 h-8 text-amber-600" />
+                <h4 className="font-bold text-lg tracking-wide text-safari-text">Expert On-Ground Support</h4>
+                <p className="text-base text-safari-muted leading-[1.6]">All partners have local offices providing 24/7 assistance during your trip.</p>
             </div>
         </div>
       </div>

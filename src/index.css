@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: "Lato", "Avenir", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", "Playfair Display", ui-serif, Georgia, serif;
   
-  --color-safari-bg: #FCFBFA;
-  --color-safari-accent: #A88655;
-  --color-safari-accent-hover: #8D6F44;
+  --color-safari-bg: #FAF9F6;
+  --color-safari-accent: #BA8B4C;
+  --color-safari-accent-hover: #9E743B;
   --color-safari-card: #FFFFFF;
-  --color-safari-text: #1C1B1A;
-  --color-safari-muted: #95908A;
+  --color-safari-text: #2D2A26;
+  --color-safari-muted: #827E7A;
 }
 
 @layer base {
@@ -146,6 +146,7 @@
     }
   body {
     @apply bg-background text-foreground;
+    background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ba8b4c' fill-opacity='0.03' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E");
     }
   html {
     @apply font-sans;
