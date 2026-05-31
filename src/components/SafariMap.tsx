@@ -275,7 +275,7 @@ export function SafariMap({ itinerary }: SafariMapProps) {
         
         {/* Map Legend Overlay */}
         <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg border border-white/20">
-            <h3 className="font-serif text-xl md:text-2xl tracking-wide text-safari-accent mb-2">Interactive Route Map</h3>
+            <h3 className="font-serif text-2xl md:text-3xl tracking-widest text-safari-accent mb-4">Interactive Route Map</h3>
             <div className="space-y-2">
                 <div className="flex items-center gap-2 text-base text-safari-text">
                     <div className="w-4 h-1 bg-blue-600 rounded-full"></div> Drive Route
@@ -293,8 +293,8 @@ export function SafariMap({ itinerary }: SafariMapProps) {
         </div>
 
         {/* Day Selector Overlay */}
-        <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg border border-white/20 w-64 max-h-[calc(100%-2rem)] flex flex-col">
-            <h3 className="font-serif text-xl md:text-2xl tracking-wide text-safari-accent mb-3">Select a Day</h3>
+        <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur rounded-xl p-4 shadow-lg border border-white/20 w-72 max-h-[calc(100%-2rem)] flex flex-col">
+            <h3 className="font-serif text-2xl md:text-3xl tracking-widest text-safari-accent mb-4">Select a Day</h3>
             {isLoadingRoutes ? (
                 <div className="text-sm text-gray-500 animate-pulse text-center py-4">Calculating Routes...</div>
             ) : (

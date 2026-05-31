@@ -84,7 +84,7 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
       
       {/* Dynamic Tour Operator Recommendations */}
       <div className="space-y-6">
-        <div className="text-center md:text-left space-y-4 mb-8">
+        <div className="text-center md:text-left space-y-4 mb-12">
             <h2 className="text-4xl md:text-5xl lg:text-[56px] font-serif text-safari-text leading-tight tracking-widest">Recommended Tour Operators</h2>
             <p className="text-lg md:text-xl leading-relaxed text-safari-muted">Based on your {level} preference and selected interests, we've matched you with these verified local experts.</p>
         </div>
@@ -133,7 +133,7 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
             </div>
             <div className="text-center md:text-left flex-1">
                 <Badge className="bg-white/20 text-white border-none mb-4 px-3 py-1 uppercase tracking-widest text-[10px]">General Platform Advice</Badge>
-                <h2 className="text-4xl md:text-5xl font-serif leading-tight mb-4 tracking-widest">Safari Planning Assistant</h2>
+                <h2 className="font-serif text-4xl md:text-5xl lg:text-[56px] tracking-widest text-[#FCFBFA] leading-tight mb-4">Safari Planning Assistant</h2>
                 <p className="text-lg md:text-xl leading-relaxed text-white/80 max-w-xl italic mb-6">"Not sure which operator to choose? Just want general advice before reaching out? Send an inquiry and we'll help point you in the right direction."</p>
                 <Button className="bg-white text-safari-accent hover:bg-white/90 rounded-full shadow-md text-base md:text-lg h-14 px-8 font-medium tracking-wide uppercase transition-all" onClick={() => window.open(`mailto:general-advice@safariexperts.com`)}>
                     Get General Advice <ArrowRight className="w-4 h-4 ml-2" />
@@ -143,7 +143,7 @@ export function ConsultantTab({ level, interests, paxChildren }: ConsultantTabPr
       </div>
 
       <div className="bg-white rounded-3xl p-8 border border-safari-accent/10 shadow-sm mt-8">
-        <h3 className="text-2xl md:text-3xl font-serif text-safari-text tracking-wide mb-8">Why Book With These Operators?</h3>
+        <h3 className="text-3xl md:text-4xl font-serif text-safari-text tracking-widest mb-10">Why Book With These Operators?</h3>
         <div className="grid md:grid-cols-3 gap-8">
             <div className="flex flex-col gap-3">
                 <CheckCircle2 className="w-8 h-8 text-green-600" />

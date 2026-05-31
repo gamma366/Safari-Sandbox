@@ -146,6 +146,7 @@ interface AlternativeOption {
   cascaded_next_day_description?: string;
   cascaded_next_day_reasoning?: string;
   cascaded_next_day_tip?: string;
+  triggers_regeneration?: boolean;
   new_lodge?: Lodge;
   new_activities?: string[];
 }
@@ -169,6 +170,11 @@ export interface DayPlan {
   permit_exit_deadline?: {
     gate: string;
     time: string;
+  };
+  permit_extension?: {
+    park: string;
+    days: number;
+    reasoning: string;
   };
   permit_advisory?: string;
   alternatives?: AlternativeOption[];
@@ -432,7 +438,7 @@ export default function App() {
     applyAlternative(dayNumber, alt);
   };
 
-  const applyAlternative = (dayNumber: number, alt: AlternativeOption) => {
+  const applyAlternative = async (dayNumber: number, alt: AlternativeOption) => {
     if (!alt || !itinerary) return;
 
     // Helper to map destination string (which might be a lodge) to a park name
@@ -535,7 +541,7 @@ export default function App() {
         }
         
         // Next day propagation
-        if (d.day === dayNumber + 1) {
+        if (d.day === dayNumber + 1 && !alt.triggers_regeneration) {
           const currentDayDest = finalTo || itinerary.itinerary.find(prev => prev.day === dayNumber)?.to;
           if (!currentDayDest) return d;
           
@@ -582,7 +588,7 @@ export default function App() {
         }
         
         // Previous day backward propagation
-        if (d.day === dayNumber - 1) {
+        if (d.day === dayNumber - 1 && !alt.triggers_regeneration) {
           const currentDaySource = finalFrom || itinerary.itinerary.find(next => next.day === dayNumber)?.from;
           if (!currentDaySource) return d;
           
@@ -622,6 +628,58 @@ export default function App() {
     };
     
     setItinerary(updatedItinerary);
+
+    if (alt.triggers_regeneration) {
+      setIsAddingDay(true);
+      setError(null);
+      try {
+        const lockedDays = updatedItinerary.itinerary.slice(0, dayNumber);
+        
+        const response = await fetch("/api/regenerate-forward", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            lockedDays,
+            remainingOriginalDays: itinerary.itinerary.slice(dayNumber),
+            originalTotalDays: itinerary.summary.total_days,
+            interests,
+            season,
+            flightPref
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to regenerate remaining days.");
+        }
+
+        const remainingDays = await response.json();
+        
+        const newItineraryDayArray = [...lockedDays, ...remainingDays];
+        
+        setItinerary({
+          ...updatedItinerary,
+          summary: {
+             ...updatedItinerary.summary,
+             total_days: newItineraryDayArray.length
+          },
+          itinerary: newItineraryDayArray
+        });
+        setOriginalItinerary(prev => prev ? {
+          ...prev,
+          summary: {
+             ...prev.summary,
+             total_days: newItineraryDayArray.length
+          },
+          itinerary: newItineraryDayArray
+        } : prev);
+        
+      } catch (err: any) {
+        console.error("Error regenerating days:", err);
+        setError(err.message || "Failed to regenerate subsequent days.");
+      } finally {
+        setIsAddingDay(false);
+      }
+    }
   };
 
   const finalizeCustomization = () => {
@@ -860,6 +918,7 @@ export default function App() {
         CORE OBJECTIVE:
         Generate a LOGICAL, REALISTIC, and HIGH-QUALITY safari itinerary.
         IMPORTANT: Keep descriptions, reasoning, and expert_tips highly concise (1-2 sentences maximum). Do not generate overly long text block otherwise your response will be severely truncated.
+        - EXPLICIT TRAVEL STRATEGY REQUIREMENT: In the \`route_overview\` field (which acts as the Travel Strategy card), you MUST explain why you chose this specific route. If the user did NOT explicitly select "great-migration" in their interests, but your route either aligns with it by coincidence of season or explicitly ignores it because they didn't ask for it, you MUST explain that decision regarding the Great Migration in the \`route_overview\` text.
 
         PLANNING LOGIC (VERY IMPORTANT):
         1. PARK SELECTION:
@@ -869,44 +928,46 @@ export default function App() {
            - 4–6 days: Add Serengeti
            - 7+ days: Include Serengeti zones strategically
         2. SERENGETI ZONE LOGIC:
-           - Use migration_calendar:
-             - Jan–Mar → Ndutu
-             - Apr–Jun → Central/Western
-             - Jul–Oct → Northern Serengeti
-             - Nov–Dec → Central/South
+           - GREAT MIGRATION REQUIREMENT: ${interests.includes('great-migration') ? `The client selected "Great Migration". You MUST maximize time in the specific Migration Zone for their season (${season}). Allocate the OVERWHELMING MAJORITY of their days to this region! Do NOT waste days on slow hop-offs. Use this calendar: Jan-Mar -> Ndutu, Apr-Jun -> Central/Western, Jul-Oct -> Northern, Nov-Dec -> Central/South.` : `The client did NOT select "Great Migration". You MUST NOT build the itinerary around following the migration. Guide them to general wildlife areas like Central Serengeti, which has excellent resident wildlife year-round, and avoid forcing long drives to the extreme North or South just to see the migration. Do not use the migration calendar.`}
            - Big cats → Central Serengeti
            - Photography → mix of zones
         3. ROUTING & LOGISTICS:
            - Use ONLY realistic routes from routes table
+           - UNSOLICITED ACTIVITIES: ABSOLUTELY DO NOT add Cultural Visits (e.g., Mto wa Mbu, Maasai Boma, banana plantations, local markets, cultural village tour) to the itinerary UNLESS the client explicitly selected the "Cultural Visits" ('cultural') interest! This is a strict constraint. Put them strictly as options in 'alternatives' instead.
            - Following logical driving order: Arusha → Tarangire/Manyara → Ngorongoro → Serengeti.
-           - KARATU TO SERENGETI TIMING ISSUE: Karatu to Naabi Hill Gate (Serengeti entry) takes 3-4 hours. This means exiting Serengeti on a later day (e.g. Day 4) forces an early exit, leading to less time in the Crater if scheduled for the following day. To avoid this, do Crater on the way IN to Serengeti (Day 2), not the way OUT.
-           - STANDARD 5-DAY FLOW WITHOUT EARLY FLIGHT (Preferred Model):
+           - KARATU TO SERENGETI TIMING ISSUE: Karatu to Naabi Hill Gate (Serengeti entry) takes 3-4 hours. To avoid long travel, do Crater on the way IN to Serengeti (Day 2), not the way OUT.
+           - STANDARD 7-DAY FLOW:
+             Day 1: Arusha -> Karatu (via Tarangire game drive).
+             Day 2: Karatu -> Ngorongoro Crater -> Serengeti (Central or Migration zone).
+             Day 3: Serengeti game drive.
+             Day 4: Serengeti game drive.
+             Day 5: Serengeti -> Karatu.
+             Day 6: Karatu -> Lake Manyara or Tarangire -> Karatu (or Arusha).
+             Day 7: Karatu -> Arusha.
+           - STANDARD 5-DAY FLOW WITHOUT EARLY FLIGHT:
              Day 1: Arusha -> Tarangire -> Karatu (Do NOT use Manyara on Day 1 unless "bird-watching" requested; offer it as an alternative).
              Day 2: Karatu -> Ngorongoro Crater -> Serengeti Central.
              Day 3-4: Serengeti Central game drive.
              Day 5: Serengeti Central to Arusha.
-           - STANDARD 5-DAY FLOW WITH EARLY FLIGHT:
-             Day 1-3: Same as above.
-             Day 4: Serengeti Central -> Karatu.
-             Day 5: Karatu -> (Manyara as alternative) -> Arusha.
            - NEVER DRIVE NORTHERN SERENGETI TO ARUSHA IN ONE DAY: This is a 10-12 hour drive. It is IMPOSSIBLE for a standard safari. 
-             - If the client is in Northern Serengeti and needs to return to Arusha by road, they MUST have an intermediate stop (e.g., Central Serengeti, Ngorongoro, or Karatu).
+             - If the client is in Northern Serengeti and needs to return to Arusha by road, they MUST have an intermediate stop.
              - Alternatively, recommend a FLIGHT OUT from Kogatende to Arusha.
            - FLIGHTS: If client prefers "Flight In", "Flight Out", or "Both", adjust the route. 
              - Flight In: Arusha -> Fly to Serengeti -> Drive back via Ngorongoro/Tarangire.
              - Flight Out: Arusha -> Drive to Tarangire -> Ngorongoro -> Serengeti -> Fly back to Arusha.
              - Explain the pros/cons of their flight choice in "flight_logic_summary".
-           - NEVER create straight-line or unrealistic travel
-           - NO DIRECT ARUSHA TO KARATU: There is no such thing as a direct drive from Arusha to Karatu with nothing to do. You MUST include a game drive in Tarangire or Lake Manyara in between. Arusha -> (Tarangire or Manyara game drive) -> Karatu.
-           - TARANGIRE TO KARATU: You MUST NOT drive from Tarangire to Karatu without an activity in between. If traveling from Tarangire to Karatu, the day's activities MUST include a visit to Lake Manyara National Park or a cultural visit (e.g., Mto wa Mbu). For short safaris (<= 3 days), Karatu is the BEST stop from Tarangire before Ngorongoro. For longer safaris (> 3 days), avoid Karatu unless necessary, and prioritize going straight to Ngorongoro Conservation Area, but you can use Karatu as an alternative.
-           - ALTERNATIVES: You MUST provide at least 3 distinct and rich alternative route options or experiences for EACH DAY.
+           - NEVER create straight-line or unrealistic travel.
+           - DAY 1 STRICT RULE: Day 1 should ALWAYS be Arusha -> Karatu (via Tarangire game drive) (unless a flight is involved). 
+             Crucially, in the \`alternatives\` array for Day 1, you MUST include an option to "Spend a night in Tarangire inside the park". The title should include a warning. The reasoning must explicitly mention: "Warning: This will automatically add an extra day to your itinerary to accommodate the change." You MUST set \`triggers_regeneration: true\` on this specific alternative object.
+           - ALTERNATIVES: You MUST provide at least 3 distinct and rich alternative route options or experiences for EACH DAY. 
+           - EXTRA NIGHT RULE (STRICT MANDATE): For EVERY SINGLE DAY in the itinerary where the destination (or main park) is NOT Karatu AND it is not the final day of the safari, you ABSOLUTELY MUST include one alternative option to "Spend an extra night in [Location]". The title MUST include "(Adds 1 Day)". The reasoning MUST explicitly mention: "Warning: This will automatically add an extra day to your itinerary to accommodate the change." You MUST set \`triggers_regeneration: true\` on this specific alternative object. This applies to Serengeti, Ngorongoro, Tarangire, etc. Do not skip this!
            - TARANGIRE 2 NIGHTS EXIT RULE: If a guest stays in Tarangire for 2 nights, and the next day they have to exit the park (e.g. 6 to 8 hours game drive before exit), they MUST NOT stay in Karatu afterwards. Their next stay MUST be inside the Ngorongoro Conservation Area.
            - SERENGETI TO CRATER RULE: If a guest is coming from Serengeti and has a Ngorongoro Crater activity, priority MUST be to stay in the Ngorongoro Conservation Area, NOT Karatu.
            - NGORONGORO CRATER TO ENDING POINT: When leaving Ngorongoro Crater to end the safari, you MUST provide options to either return directly to Arusha or stay overnight in Karatu.
            - KARATU OVERUSE: Do NOT default to Karatu for every intermediate stop. 
              - Staying INSIDE the parks (Tarangire, Serengeti, Ngorongoro Rim) is preferred for a high-end experience.
              - Karatu is a town stop; use it only for "Mid-range" or "Budget" repositioning, or for specific farm-house requests.
-             - Consider Mto wa Mbu (Lake Manyara) as an alternative waypoint.
+             - Consider Lake Manyara National Park as an alternative waypoint.
            - Include drive_time per leg
         4. CONSERVATION AREA GAME DRIVES (STRICT RULE):
            - In the Ngorongoro Conservation Area (NCAA), the ONLY area where general game drives are allowed is the Ndutu area.
@@ -952,12 +1013,12 @@ export default function App() {
              - If entering Ngorongoro Loduare Gate at 2:00 PM on Day 2, the permit expires at 2:00 PM on Day 3.
              - Staying 2 nights in Serengeti requires 2 x 24h fees.
            - SCENARIO: If a guest lands at Seronera at 10:30 AM (Day 1) and stays 3 nights, they MUST exit Naabi Hill Gate by 10:30 AM on Day 4. 
-           - PROBLEM: This often cuts Day 4 game drives short.
-           - RESOLUTION: If the schedule creates a conflict (e.g. late flight in, early departure out), the "permit_advisory" MUST state: "Conflict detected: Your 10:30am entry means you must exit by 10:30am on your last day. Consider a 12-hour extension fee to maximize your final game drive."
+           - PROBLEM: This often cuts Day 4 game drives short or makes it geographically impossible to reach the gate in time (e.g. Ndutu to Loduare takes 3-4 hours, so an 9:00 AM deadline is impossible without driving in the dark).
+           - RESOLUTION: If the schedule creates a conflict or an impossible drive, you MUST AUTOMATICALLY ADD a \`permit_extension\` object. Set \`days\` to 1 (usually 1 extra day fee), \`park\` to the park name (e.g., "Ngorongoro Conservation Area"), and explain in \`reasoning\`. The UI will automatically charge the customer for this extension.
            - CRITICAL GATES:
              - Loduare Gate: Entrance to Ngorongoro from Karatu/Manyara.
              - Naabi Hill Gate: Entrance/Exit between Ngorongoro and Serengeti.
-           - CALCULATE: For each day, determine if a "permit_entry" or "permit_exit_deadline" applies. Be precise with the gate names.
+           - CALCULATE: For each day, determine if a "permit_entry" or "permit_exit_deadline" or "permit_extension" applies. Be precise.
         12. CUSTOMIZATION TAB ENRICHMENT (ALTERNATIVES):
            - The "Customize Plan" page needs to add NEW value, not just repeat the itinerary.
            - For EACH day, provide 2-3 distinct "alternatives" that actually change the logistics.
@@ -1012,6 +1073,25 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-20">
+      <AnimatePresence>
+        {isAddingDay && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          >
+            <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm mx-4">
+              <Loader2 className="w-12 h-12 animate-spin text-safari-accent mb-4" />
+              <h3 className="font-serif text-xl font-bold text-center text-safari-text tracking-tight mb-2">Analyzing Route</h3>
+              <p className="text-sm text-safari-muted text-center leading-relaxed">
+                We're carefully recalibrating your itinerary to ensure seamless logistics and logical routing...
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Hero Section */}
       <div className="relative h-[45vh] min-h-[400px] flex items-center justify-center overflow-hidden print:hidden border-b-[6px] border-safari-accent">
         <div className="absolute inset-0 bg-[#FCFBFA] opacity-90 z-0">
@@ -1044,11 +1124,11 @@ export default function App() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 print:mt-0 relative z-20">
+      <main className="max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 -mt-16 print:mt-0 relative z-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
           
-          {/* Left Column: Form */}
-          <div className="lg:col-span-4 space-y-6 print:hidden">
+          {/* Form (Left Column on Desktop) */}
+          <div className="lg:col-span-3 space-y-6 print:hidden">
             <Card className="border border-safari-accent/20 shadow-2xl shadow-black/5 rounded-none bg-white">
               <CardHeader className="bg-safari-bg/80 border-b border-safari-accent/10 pb-8 pt-8">
                 <CardTitle className="font-serif text-3xl tracking-tight text-safari-text text-center">Design Your Safari</CardTitle>
@@ -1168,8 +1248,8 @@ export default function App() {
             </Card>
           </div>
 
-          {/* Right Column: Itinerary */}
-          <div className="lg:col-span-8 print:col-span-full">
+          {/* Itinerary (Right Column on Desktop) */}
+          <div className="lg:col-span-9 print:col-span-full">
             <AnimatePresence mode="wait">
               {loading ? (
                 <motion.div 
@@ -1421,11 +1501,11 @@ export default function App() {
                     <TabsContent value="customize" className="mt-0">
                       <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
                         <CardHeader className="p-8 border-b border-safari-accent/5">
-                          <CardTitle className="text-3xl font-serif text-safari-text flex items-center gap-3">
-                            <Settings2 className="w-8 h-8 text-safari-accent" />
+                          <CardTitle className="text-4xl md:text-5xl tracking-widest font-serif text-safari-text flex items-center gap-3">
+                            <Settings2 className="w-8 h-8 md:w-10 md:h-10 text-safari-accent" />
                             Customize Your Journey
                           </CardTitle>
-                          <CardDescription className="text-lg">
+                          <CardDescription className="text-lg md:text-xl leading-relaxed text-safari-muted">
                             Adjust destinations, swap activities, or refine your stays. Every change updates your plan in real-time.
                           </CardDescription>
                         </CardHeader>
@@ -1805,7 +1885,7 @@ export default function App() {
                   </p>
                 </section>
 
-                {(selectedDay.permit_entry || selectedDay.permit_exit_deadline || selectedDay.permit_advisory) && (
+                {(selectedDay.permit_entry || selectedDay.permit_exit_deadline || selectedDay.permit_advisory || selectedDay.permit_extension) && (
                   <section className="bg-amber-50/50 p-6 rounded-2xl border border-amber-200">
                     <h3 className="text-amber-800 font-serif text-xl md:text-2xl tracking-wide mb-3 flex items-center gap-2">
                        <ShieldCheck className="w-5 h-5" />
@@ -1824,6 +1904,13 @@ export default function App() {
                           <p className="text-[10px] uppercase tracking-wider text-amber-600 font-bold mb-1">Exit Deadline (24h)</p>
                           <p className="text-sm font-medium">{selectedDay.permit_exit_deadline.gate}</p>
                           <p className="text-lg font-serif text-amber-900">{selectedDay.permit_exit_deadline.time}</p>
+                        </div>
+                      )}
+                      {selectedDay.permit_extension && (
+                        <div className="bg-amber-100 p-3 rounded-xl border border-amber-200 md:col-span-2">
+                          <p className="text-[10px] uppercase tracking-wider text-amber-600 font-bold mb-1">Late Exit Penalty / Extension Added</p>
+                          <p className="text-sm font-bold text-amber-900">+{selectedDay.permit_extension.days} Day(s) {selectedDay.permit_extension.park} Fee</p>
+                          <p className="text-xs text-amber-800 mt-1">{selectedDay.permit_extension.reasoning}</p>
                         </div>
                       )}
                     </div>

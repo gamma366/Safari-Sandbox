@@ -172,6 +172,19 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
              }
           }
       }
+
+      // Check for permit extension logic
+      if (day.permit_extension && day.permit_extension.park) {
+         const parkName = day.permit_extension.park;
+         const p = SAFARI_DATABASE.parks.find(p => p.name.toLowerCase().includes(parkName.toLowerCase()) || parkName.toLowerCase().includes(p.name.toLowerCase())) as any;
+         const entry = p ? (p.entry_fee_usd || 71) : 71;
+
+         if (parkMap.has(parkName)) {
+             parkMap.get(parkName)!.days += day.permit_extension.days;
+         } else {
+             parkMap.set(parkName, { park: parkName, feePerPerson: entry, concessionPerPerson: 0, days: day.permit_extension.days });
+         }
+      }
     });
 
     return {
@@ -282,9 +295,9 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
         className="px-2 py-6 cursor-pointer flex justify-between items-center bg-white hover:bg-safari-bg/30 select-none transition-colors"
         onClick={() => toggleSection(id)}
       >
-        <h2 className="text-xl md:text-2xl font-serif text-safari-text tracking-wide">{title}</h2>
+        <h2 className="text-2xl md:text-3xl font-serif text-safari-text tracking-wider">{title}</h2>
         <div className="flex items-center gap-6">
-          {total && <span className="font-serif font-bold text-xl md:text-2xl text-safari-accent">{total}</span>}
+          {total && <span className="font-serif font-bold text-2xl md:text-3xl text-safari-accent">{total}</span>}
           {openSections[id] ? <ChevronUp className="w-5 h-5 text-safari-accent/60" /> : <ChevronDown className="w-5 h-5 text-safari-accent/60" />}
         </div>
       </div>
@@ -297,12 +310,12 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
   );
 
   const TableRow: React.FC<{ label: string, desc: React.ReactNode, cost: string }> = ({ label, desc, cost }) => (
-    <div className="flex justify-between py-3 border-b border-dashed border-safari-accent/20 last:border-0">
+    <div className="flex justify-between py-4 border-b border-dashed border-safari-accent/20 last:border-0">
       <div>
-        <div className="font-medium text-safari-text">{label}</div>
-        <div className="text-sm text-safari-muted mt-0.5">{desc}</div>
+        <div className="font-medium text-lg text-safari-text tracking-wide">{label}</div>
+        <div className="text-base text-safari-muted leading-relaxed mt-1 max-w-lg">{desc}</div>
       </div>
-      <div className="font-semibold text-safari-text text-right">{cost}</div>
+      <div className="font-semibold text-lg text-safari-text text-right">{cost}</div>
     </div>
   );
 
@@ -498,21 +511,21 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-6">
               <div className="w-full md:w-auto text-left">
                   <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-safari-accent mb-2">Final Quotation</h2>
-                  <p className="font-serif text-3xl md:text-4xl text-[#FCFBFA] leading-tight">Total Estimated <br/> Investment</p>
-                  <p className="text-white/50 text-[10px] mt-4 uppercase tracking-widest max-w-xs leading-relaxed">Excludes international flights, visas, and premium beverages.</p>
+                  <p className="font-serif text-4xl md:text-5xl lg:text-[56px] tracking-widest text-[#FCFBFA] leading-tight">Total Estimated <br/> Investment</p>
+                  <p className="text-white/50 text-xs mt-6 uppercase tracking-widest max-w-sm leading-relaxed">Excludes international flights, visas, and premium beverages.</p>
               </div>
               <div className="text-right w-full md:w-auto md:min-w-[300px]">
-                  <div className="flex justify-between md:justify-end md:gap-16 mb-3 text-[#FCFBFA]/60 text-xs uppercase tracking-widest font-semibold">
+                  <div className="flex justify-between md:justify-end md:gap-16 mb-4 text-[#FCFBFA]/60 text-sm uppercase tracking-widest font-semibold">
                       <span>Subtotal</span>
-                      <span className="font-serif text-white text-base">{formatMoney(subtotal)}</span>
+                      <span className="font-serif text-white text-lg tracking-wider">{formatMoney(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between md:justify-end md:gap-16 mb-6 text-[#FCFBFA]/60 text-xs uppercase tracking-widest font-semibold">
+                  <div className="flex justify-between md:justify-end md:gap-16 mb-8 text-[#FCFBFA]/60 text-sm uppercase tracking-widest font-semibold">
                       <span>Taxes & Fees</span>
-                      <span className="font-serif text-white text-base">{formatMoney(taxesTotal)}</span>
+                      <span className="font-serif text-white text-lg tracking-wider">{formatMoney(taxesTotal)}</span>
                   </div>
-                  <div className="flex justify-between md:justify-end md:gap-16 pt-6 border-t border-safari-accent/30">
-                      <span className="text-sm font-bold uppercase tracking-[0.2em] text-[#FCFBFA] self-end pb-1">Grand Total</span>
-                      <span className="text-4xl md:text-5xl font-serif text-safari-accent">{formatMoney(grandTotal)}</span>
+                  <div className="flex justify-between md:justify-end md:gap-16 pt-8 border-t border-safari-accent/30">
+                      <span className="text-base font-bold uppercase tracking-[0.2em] text-[#FCFBFA] self-end pb-2">Grand Total</span>
+                      <span className="text-5xl md:text-6xl font-serif text-safari-accent tracking-widest">{formatMoney(grandTotal)}</span>
                   </div>
               </div>
           </div>

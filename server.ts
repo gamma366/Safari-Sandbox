@@ -85,6 +85,7 @@ async function startServer() {
                           cascaded_next_day_description: { type: Type.STRING },
                           cascaded_next_day_reasoning: { type: Type.STRING },
                           cascaded_next_day_tip: { type: Type.STRING },
+                          triggers_regeneration: { type: Type.BOOLEAN },
                           new_lodge: {
                             type: Type.OBJECT,
                             properties: {
@@ -242,6 +243,7 @@ async function startServer() {
                     cascaded_next_day_description: { type: Type.STRING },
                     cascaded_next_day_reasoning: { type: Type.STRING },
                     cascaded_next_day_tip: { type: Type.STRING },
+                    triggers_regeneration: { type: Type.BOOLEAN },
                     new_lodge: {
                       type: Type.OBJECT,
                       properties: {
@@ -310,6 +312,147 @@ async function startServer() {
       console.error("Gemini API Error:", error);
       res.status(error.status || 500).json({ 
         error: error.message || "An error occurred while generating the extra day."
+      });
+    }
+  });
+
+  app.post("/api/regenerate-forward", async (req, res) => {
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ error: "Server Configuration Error: GEMINI_API_KEY environment variable is not set." });
+      }
+
+      const { lockedDays, originalTotalDays, remainingOriginalDays, interests, season, flightPref } = req.body;
+      
+      const lastLockedDay = lockedDays[lockedDays.length - 1];
+      const newTotalDays = originalTotalDays + 1; // Assuming we add one day for the delay
+      
+      const prompt = `
+        You are an expert Safari Planner. The user changed their itinerary on Day ${lastLockedDay.day}.
+        They now end Day ${lastLockedDay.day} at "${lastLockedDay.to}".
+        
+        The new total length of the safari is ${newTotalDays} days (we added one extra day to accommodate this change).
+        You must generate the REMAINING days (from Day ${lastLockedDay.day + 1} to Day ${newTotalDays}).
+        
+        CRITICAL REQUIREMENTS:
+        - Generate exactly ${newTotalDays - lastLockedDay.day} remaining days.
+        - Start Day ${lastLockedDay.day + 1} from "${lastLockedDay.to}".
+        - Follow the standard logic for reaching Ngorongoro and Serengeti. If they are in Tarangire, they likely need to go to Ngorongoro Conservation Area or Karatu next.
+        - End the final day at Arusha, Kilimanjaro, or Zanzibar.
+        - IMPORTANT: Provide the response as a JSON array containing ONLY the remaining days objects (no summary object, just the array of days).
+        - ALTERNATIVES: You MUST provide at least 3 distinct and rich alternative route options or experiences for EACH DAY. 
+        - EXTRA NIGHT RULE (STRICT MANDATE): For EVERY SINGLE DAY in the itinerary where the destination (or main park) is NOT Karatu AND it is not the final day of the safari, you ABSOLUTELY MUST include one alternative option to "Spend an extra night in [Location]". The title MUST include "(Adds 1 Day)". The reasoning MUST explicitly mention: "Warning: This will automatically add an extra day to your itinerary to accommodate the change." You MUST set \`triggers_regeneration: true\` on this specific alternative object. This applies to Serengeti, Ngorongoro, Tarangire, etc. Do not skip this!
+        
+        PRESERVE THE ORIGINAL PLAN AS MUCH AS POSSIBLE:
+        The customer had an original plan for the remaining days. You must keep the original lodges, activities, and routing as much as possible. Since we added a day, you will likely just need to shift the original plan forward by 1 day, while smoothing out the connection from the new "${lastLockedDay.to}".
+        Here is the original rest of the itinerary they had:
+        ${JSON.stringify(remainingOriginalDays, null, 2)}
+        
+        - Match this schema for each day: 
+        { "day": number, "from": string, "to": string, "drive_time": string, "departure_time": string, "activities": string[], "detailed_description": string, "reasoning": string, "expert_tip": string, "lodge": { "name": string, "category": string, "price_range": string, "inside_park": boolean }, "alternatives": [...] }
+      `;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: prompt,
+        config: {
+          maxOutputTokens: 25000,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                day: { type: Type.INTEGER },
+                from: { type: Type.STRING },
+                to: { type: Type.STRING },
+                drive_time: { type: Type.STRING },
+                departure_time: { type: Type.STRING },
+                activities: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING }
+                },
+                detailed_description: { type: Type.STRING },
+                reasoning: { type: Type.STRING },
+                expert_tip: { type: Type.STRING },
+                alternatives: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      title: { type: Type.STRING },
+                      description: { type: Type.STRING },
+                      reasoning: { type: Type.STRING },
+                      new_to: { type: Type.STRING },
+                      new_from: { type: Type.STRING },
+                      cascaded_next_day_description: { type: Type.STRING },
+                      cascaded_next_day_reasoning: { type: Type.STRING },
+                      cascaded_next_day_tip: { type: Type.STRING },
+                      triggers_regeneration: { type: Type.BOOLEAN },
+                      new_lodge: {
+                        type: Type.OBJECT,
+                        properties: {
+                          name: { type: Type.STRING },
+                          category: { type: Type.STRING },
+                          price_range: { type: Type.STRING },
+                          inside_park: { type: Type.BOOLEAN }
+                        },
+                        required: ["name", "category", "price_range", "inside_park"]
+                      },
+                      new_activities: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                      }
+                    },
+                    required: ["title", "description", "reasoning", "new_lodge", "new_activities"]
+                  }
+                },
+                permit_entry: {
+                  type: Type.OBJECT,
+                  properties: {
+                    gate: { type: Type.STRING },
+                    time: { type: Type.STRING }
+                  }
+                },
+                permit_exit_deadline: {
+                  type: Type.OBJECT,
+                  properties: {
+                    gate: { type: Type.STRING },
+                    time: { type: Type.STRING }
+                  }
+                },
+                permit_advisory: { type: Type.STRING },
+                lodge: { 
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    category: { type: Type.STRING },
+                    price_range: { type: Type.STRING },
+                    inside_park: { type: Type.BOOLEAN }
+                  },
+                  required: ["name", "category", "price_range", "inside_park"]
+                }
+              },
+              required: ["day", "from", "to", "drive_time", "departure_time", "activities", "lodge", "detailed_description", "reasoning", "expert_tip", "alternatives"]
+            }
+          }
+        }
+      });
+
+      if (response.text) {
+        let text = response.text.trim();
+        const jsonMatch = text.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
+        if (jsonMatch) {
+          text = jsonMatch[1].trim();
+        }
+        res.json(JSON.parse(text));
+      } else {
+        res.status(500).json({ error: "Failed to generate remaining days." });
+      }
+    } catch (error: any) {
+      console.error("Gemini API Error:", error);
+      res.status(error.status || 500).json({ 
+        error: error.message || "An error occurred while generating remaining days."
       });
     }
   });
