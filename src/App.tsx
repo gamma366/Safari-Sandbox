@@ -1315,7 +1315,7 @@ export default function App() {
                   className="space-y-8 pb-20"
                 >
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-                    <div className="bg-white/95 backdrop-blur shadow-md border border-safari-accent/20 p-4 md:px-6 flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
+                    <div className="bg-white/95 backdrop-blur shadow-md border border-safari-accent/20 p-4 md:px-6 flex flex-col md:flex-row justify-between items-end gap-4 mb-8 print:hidden">
                       <TabsList className="bg-transparent p-0 h-auto gap-6 rounded-none justify-start w-full md:w-auto border-b border-safari-accent/20 pb-0">
                         <TabsTrigger value="view" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px]">View Itinerary</TabsTrigger>
                         <TabsTrigger value="customize" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">

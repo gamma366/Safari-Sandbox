@@ -161,8 +161,22 @@
   }
   
   /* Hide UI elements that shouldn't be printed */
-  aside, nav, .print\:hidden, [role="tablist"], button {
+  aside, nav, .print\:hidden, [role="tablist"] {
     display: none !important;
+  }
+  
+  /* Ensure accordions are expanded for printing */
+  [data-slot="accordion-content"] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  [data-slot="accordion-content"] > div {
+    height: auto !important;
+  }
+  
+  [data-radix-collection-item] {
+    display: block !important;
   }
   
   /* Ensure main content is visible and takes up full width */
