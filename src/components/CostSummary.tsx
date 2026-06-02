@@ -427,26 +427,26 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
               key={i} 
               label={item.park} 
               desc={
-                <div className="flex flex-col gap-2 mt-2 font-mono text-xs">
+                <div className="flex flex-col gap-3 mt-2 text-sm leading-relaxed text-safari-muted">
                   {item.feePerPerson > 0 && item.days > 0 && (
-                     <div className="flex flex-col gap-0.5">
+                     <div className="flex flex-col gap-1">
                         <span className="font-semibold text-safari-text">Park Fee ({item.days} days @ {formatMoney(item.feePerPerson)}/day)</span>
-                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.feePerPerson)} = {formatMoney(item.adultEntryTotal)}</span>}
-                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.feePerPerson * childParkDiscount)} = {formatMoney(item.childEntryTotal)}</span>}
+                        {adults > 0 && <span className="pl-2">- Adults: {adults} x {formatMoney(item.feePerPerson)} = {formatMoney(item.adultEntryTotal)}</span>}
+                        {children > 0 && <span className="pl-2">- Children: {children} x {formatMoney(item.feePerPerson * childParkDiscount)} = {formatMoney(item.childEntryTotal)}</span>}
                      </div>
                   )}
                   {item.concessionPerPerson > 0 && item.days > 0 && (
-                     <div className="flex flex-col gap-0.5">
+                     <div className="flex flex-col gap-1">
                         <span className="font-semibold text-safari-text">Concession Fee ({item.days} days @ {formatMoney(item.concessionPerPerson)}/day)</span>
-                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.concessionPerPerson)} = {formatMoney(item.adultConcessionTotal)}</span>}
-                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.concessionPerPerson * childParkDiscount)} = {formatMoney(item.childConcessionTotal)}</span>}
+                        {adults > 0 && <span className="pl-2">- Adults: {adults} x {formatMoney(item.concessionPerPerson)} = {formatMoney(item.adultConcessionTotal)}</span>}
+                        {children > 0 && <span className="pl-2">- Children: {children} x {formatMoney(item.concessionPerPerson * childParkDiscount)} = {formatMoney(item.childConcessionTotal)}</span>}
                      </div>
                   )}
                   {item.transitDays > 0 && item.transitFeePerPerson > 0 && (
-                     <div className="flex flex-col gap-0.5">
+                     <div className="flex flex-col gap-1">
                         <span className="font-semibold text-safari-text">Transit Fee ({item.transitDays} transits @ {formatMoney(item.transitFeePerPerson)}/transit)</span>
-                        {adults > 0 && <span className="pl-2 text-safari-muted/80">- Adults: {adults} x {formatMoney(item.transitFeePerPerson)} = {formatMoney(item.adultTransitTotal)}</span>}
-                        {children > 0 && <span className="pl-2 text-safari-muted/80">- Children: {children} x {formatMoney(item.transitFeePerPerson * childParkDiscount)} = {formatMoney(item.childTransitTotal)}</span>}
+                        {adults > 0 && <span className="pl-2">- Adults: {adults} x {formatMoney(item.transitFeePerPerson)} = {formatMoney(item.adultTransitTotal)}</span>}
+                        {children > 0 && <span className="pl-2">- Children: {children} x {formatMoney(item.transitFeePerPerson * childParkDiscount)} = {formatMoney(item.childTransitTotal)}</span>}
                      </div>
                   )}
                 </div>

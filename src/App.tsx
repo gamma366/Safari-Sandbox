@@ -210,6 +210,7 @@ export default function App() {
   const [flightPref, setFlightPref] = useState<string>('none');
   
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [originalItinerary, setOriginalItinerary] = useState<Itinerary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -842,7 +843,17 @@ export default function App() {
     if (!itinerary || itinerary.itinerary.length === 0) return;
     
     setIsAddingDay(true);
+    setProgress(0);
     setError(null);
+    
+    const startTime = Date.now();
+    const assumedDuration = 10000; // 10 seconds for a single day add
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const newProgress = Math.min(95, (elapsed / assumedDuration) * 100);
+      setProgress(newProgress);
+    }, 100);
+
     try {
       const response = await fetch("/api/add-day", {
         method: "POST",
@@ -861,6 +872,10 @@ export default function App() {
 
       const newDay = await response.json();
       
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 400));
+
       const newItineraryDayArray = [...itinerary.itinerary, newDay];
       
       setItinerary({
@@ -882,6 +897,7 @@ export default function App() {
       
       setAddDayConfirm(false);
     } catch (err: any) {
+      clearInterval(progressInterval);
       console.error("Error adding day:", err);
       setError(err.message || "Failed to add extra day.");
     } finally {
@@ -896,8 +912,17 @@ export default function App() {
     }
 
     setLoading(true);
+    setProgress(0);
     setError(null);
     setItinerary(null);
+
+    const startTime = Date.now();
+    const assumedDuration = 25000; // 25 seconds typical generation time
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const newProgress = Math.min(95, (elapsed / assumedDuration) * 100);
+      setProgress(newProgress);
+    }, 100);
 
     try {
       const prompt = `
@@ -928,7 +953,7 @@ export default function App() {
            - 4–6 days: Add Serengeti
            - 7+ days: Include Serengeti zones strategically
         2. SERENGETI ZONE LOGIC:
-           - GREAT MIGRATION REQUIREMENT: ${interests.includes('great-migration') ? `The client selected "Great Migration". You MUST maximize time in the specific Migration Zone for their season (${season}). Allocate the OVERWHELMING MAJORITY of their days to this region! Do NOT waste days on slow hop-offs. Use this calendar: Jan-Mar -> Ndutu, Apr-Jun -> Central/Western, Jul-Oct -> Northern, Nov-Dec -> Central/South.` : `The client did NOT select "Great Migration". You MUST NOT build the itinerary around following the migration. Guide them to general wildlife areas like Central Serengeti, which has excellent resident wildlife year-round, and avoid forcing long drives to the extreme North or South just to see the migration. Do not use the migration calendar.`}
+           - GREAT MIGRATION REQUIREMENT: ${interests.includes('great-migration') ? `The client explicitly selected "Great Migration". You MUST follow the migration and STRICTLY PRIORITIZE the migration area by maximizing the number of days spent there! For their season (${season}): Jan-Mar -> Ndutu, Apr-Jun -> Central/Western, Jul-Oct -> Northern, Nov-Dec -> Central/South. Allocate the OVERWHELMING MAJORITY of their days to this specific region.` : `The client did NOT select "Great Migration". You MUST NOT build the itinerary around following the migration! Do NOT prioritize the migration areas in number of days or routing. Guide them to general wildlife areas with strong resident wildlife like Central Serengeti, and ignore the migration calendar.`}
            - Big cats → Central Serengeti
            - Photography → mix of zones
         3. ROUTING & LOGISTICS:
@@ -1060,10 +1085,16 @@ export default function App() {
       }
 
       const data = await response.json();
+      
+      clearInterval(progressInterval);
+      setProgress(100);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
       console.log("Generated Itinerary Data:", data);
       setItinerary(data);
       setOriginalItinerary(JSON.parse(JSON.stringify(data))); // Deep copy for resetting
     } catch (err: any) {
+      clearInterval(progressInterval);
       console.error("Itinerary Generation Error:", err);
       setError(err.message || "An error occurred while generating the itinerary.");
     } finally {
@@ -1082,7 +1113,14 @@ export default function App() {
             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
           >
             <div className="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm mx-4">
-              <Loader2 className="w-12 h-12 animate-spin text-safari-accent mb-4" />
+              <div className="w-full h-1.5 bg-safari-accent/20 rounded-full overflow-hidden mb-6">
+                <motion.div 
+                  className="h-full bg-safari-accent"
+                  initial={{ width: "0%" }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ ease: "linear", duration: 0.1 }}
+                />
+              </div>
               <h3 className="font-serif text-xl font-bold text-center text-safari-text tracking-tight mb-2">Analyzing Route</h3>
               <p className="text-sm text-safari-muted text-center leading-relaxed">
                 We're carefully recalibrating your itinerary to ensure seamless logistics and logical routing...
@@ -1110,7 +1148,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             className="text-6xl md:text-[6rem] lg:text-[6rem] leading-none font-serif text-safari-text mb-6 drop-shadow-sm tracking-widest"
           >
-            Tanzania Safari Planner
+            Safari Sandbox
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -1259,9 +1297,13 @@ export default function App() {
                   exit={{ opacity: 0 }}
                   className="flex flex-col items-center justify-center h-full min-h-[400px] space-y-4"
                 >
-                  <div className="relative w-20 h-20">
-                    <div className="absolute inset-0 border-4 border-safari-accent/20 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-safari-accent rounded-full border-t-transparent animate-spin"></div>
+                  <div className="w-full max-w-sm h-1.5 bg-safari-accent/20 rounded-full overflow-hidden mb-2">
+                    <motion.div 
+                      className="h-full bg-safari-accent"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ ease: "linear", duration: 0.1 }}
+                    />
                   </div>
                   <p className="text-safari-muted font-serif text-xl italic">Consulting local guides...</p>
                 </motion.div>
@@ -1275,20 +1317,20 @@ export default function App() {
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                     <div className="bg-white/95 backdrop-blur shadow-md border border-safari-accent/20 p-4 md:px-6 flex flex-col md:flex-row justify-between items-end gap-4 mb-8">
                       <TabsList className="bg-transparent p-0 h-auto gap-6 rounded-none justify-start w-full md:w-auto border-b border-safari-accent/20 pb-0">
-                        <TabsTrigger value="view" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px]">View Itinerary</TabsTrigger>
-                        <TabsTrigger value="customize" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="view" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px]">View Itinerary</TabsTrigger>
+                        <TabsTrigger value="customize" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Settings2 className="w-4 h-4" />
                           Customize
                         </TabsTrigger>
-                        <TabsTrigger value="map" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="map" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <MapPin className="w-4 h-4" />
                           Interactive Map
                         </TabsTrigger>
-                        <TabsTrigger value="cost" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="cost" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Receipt className="w-4 h-4" />
                           Cost Summary
                         </TabsTrigger>
-                        <TabsTrigger value="consultant" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-xs uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
+                        <TabsTrigger value="consultant" className="text-safari-muted hover:text-safari-accent rounded-none px-0 pb-3 pt-2 text-sm uppercase tracking-widest font-semibold border-b-2 border-transparent data-active:border-safari-accent data-active:bg-transparent data-active:shadow-none data-active:text-safari-accent translate-y-[1px] flex items-center gap-2">
                           <Users className="w-4 h-4" />
                           Consultant
                         </TabsTrigger>
@@ -1401,9 +1443,6 @@ export default function App() {
                                 <p className="text-sm md:text-base text-amber-800 leading-[1.8] max-w-md">The base estimate is {itinerary.pricing_estimate.total_range} for 2 adults over {itinerary.itinerary.length} days. Excludes international flights. <strong className="font-black">See the Cost Summary tab for exact group pricing with children and room types.</strong></p>
                               </div>
                             </div>
-                            <Button className="bg-safari-accent hover:bg-safari-accent-hover text-white text-base md:text-lg rounded-full h-14 px-8 shrink-0 tracking-widest shadow-md transition-all">
-                              Book Consultation
-                            </Button>
                           </div>
                         </CardContent>
                       </Card>
