@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronDown, ChevronUp, Users, Plus, Minus, UserCheck, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DayPlan, SAFARI_DATABASE } from '../App';
+import { DayPlan } from '../App';
+import { calculateCostSummary } from '../lib/costCalculator';
 
 interface CostSummaryProps {
   itinerary: DayPlan[];
@@ -24,16 +25,36 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
     setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const totalGuests = adults + children;
-  const days = itinerary.length;
-  const requiredVehicles = Math.ceil(totalGuests / 7) || 1;
-
   const roomTypeMultipliers: Record<string, { label: string, multi: number }> = {
     'single': { label: 'Single Room (+30%)', multi: 1.3 },
     'double': { label: 'Double/Twin Room', multi: 1.0 },
     'triple': { label: 'Triple Room (-10% pp)', multi: 0.9 },
     'family': { label: 'Family Suite (+20% pp)', multi: 1.2 }
   };
+
+  const {
+    subtotal,
+    taxesTotal,
+    grandTotal,
+    formattedAccList,
+    formattedTransList,
+    formattedParkList,
+    formattedFlightList,
+    formattedActList,
+    totalGuests,
+    days,
+    requiredVehicles,
+    vatEst,
+    TAXES_VAT_PERCENT,
+    TAXES_SERVICE_FEE,
+    TAXES_CONSERVATION_LEVY
+  } = useMemo(() => calculateCostSummary(itinerary, adults, children, roomType), [itinerary, adults, children, roomType]);
+
+  const accTotal = formattedAccList.reduce((acc: any, curr: any) => acc + curr.total, 0);
+  const transTotal = formattedTransList.reduce((acc: any, curr: any) => acc + curr.total, 0);
+  const parkTotal = formattedParkList.reduce((acc: any, curr: any) => acc + curr.total, 0);
+  const flightTotal = formattedFlightList.reduce((acc: any, curr: any) => acc + curr.total, 0);
+  const actTotal = formattedActList.reduce((acc: any, curr: any) => acc + curr.total, 0);
 
   const parksVisited = useMemo(() => {
     const parks = new Set<string>();
@@ -46,248 +67,13 @@ export function CostSummary({ itinerary, adults, setAdults, childrenCount: child
     return Array.from(parks).join(', ') || "Various Parks";
   }, [itinerary]);
 
-  const {
-    accList,
-    transList,
-    parkList,
-    flightList,
-    actList
-  } = useMemo(() => {
-    const accommodationsMap = new Map<string, { nights: number; pricePerNight: number; name: string }>();
-    const parkMap = new Map<string, { park: string; feePerPerson: number; concessionPerPerson: number; days: number; transitFeePerPerson?: number; transitDays?: number }>();
-    const flights: any[] = [];
-    const optionalActivities: any[] = [];
-    let craterFeeTracker = false;
-    let balloonTracker = false;
-    let maasaiTracker = false;
-
-    itinerary.forEach((day, index) => {
-      // Accommodations
-      const lodgeName = day.lodge?.name || 'Unknown Lodge';
-      const dbLodge = SAFARI_DATABASE.lodges.find(l => l.name === lodgeName) as any;
-      
-      const pricePerNight = dbLodge ? (dbLodge.price_usd?.mid || 400) : 400; // Default price if unknown
-      
-      // We skip adding to accommodations if it's explicitly stated as returning/none
-      if (lodgeName && !lodgeName.toLowerCase().includes("none") && !lodgeName.toLowerCase().includes("arusha")) {
-        const existingName = accommodationsMap.get(lodgeName);
-        if (existingName) {
-          existingName.nights += 1;
-        } else {
-          accommodationsMap.set(lodgeName, { nights: 1, pricePerNight, name: lodgeName });
-        }
-      }
-
-      // Park Fees
-      if (dbLodge) {
-         const park = SAFARI_DATABASE.parks.find(p => p.id === dbLodge.park_id) as any;
-         if (park && park.name.toLowerCase() !== "karatu / highlands" && park.name.toLowerCase() !== "arusha town") {
-             const entry = park.entry_fee_usd || 0;
-             const concession = dbLodge.inside_park ? (entry > 60 ? 71 : 59) : 0; 
-
-             if (parkMap.has(park.name)) {
-               parkMap.get(park.name)!.days += 1;
-             } else {
-               parkMap.set(park.name, { park: park.name, feePerPerson: entry, concessionPerPerson: concession, days: 1, transitFeePerPerson: 0, transitDays: 0 });
-             }
-         }
-      }
-
-      // Special Activites & Fees
-      const activitiesStr = (day.activities || []).join(' ').toLowerCase();
-
-      // Crater Fee
-      if (!craterFeeTracker && (activitiesStr.includes('crater') || day.to.toLowerCase().includes('crater'))) {
-         craterFeeTracker = true;
-         // Crater fee is $295 per vehicle.
-         // Pass total guests effectively spreading the per-vehicle cost so total = 295 * requiredVehicles
-         const exactTotalFee = 295 * requiredVehicles;
-         const perPersonEquivalent = exactTotalFee / totalGuests;
-         optionalActivities.push({ 
-           name: "Ngorongoro Crater Service Fee", 
-           costPerPerson: perPersonEquivalent, 
-           desc: `Mandatory vehicle fee ($295 per vehicle)`,
-           isFlatVehicleFee: true
-         });
-      }
-
-      // Balloon Safari
-      if (!balloonTracker && activitiesStr.includes('balloon')) {
-         balloonTracker = true;
-         optionalActivities.push({ name: "Hot Air Balloon Safari", costPerPerson: 599, desc: "Classic aerial safari & champagne breakfast" });
-      }
-
-      // Maasai Visit
-      if (!maasaiTracker && (activitiesStr.includes('maasai') || activitiesStr.includes('masai'))) {
-         maasaiTracker = true;
-         optionalActivities.push({ name: "Maasai Village Cultural Visit", costPerPerson: 40, desc: "Community contribution & cultural tour" });
-      }
-
-      // Flights and Transit Fee
-      const flyKeywords = ['flight', 'fly', 'airstrip'];
-      const drivesStr = (day.drive_time || '').toLowerCase();
-      const toStr = (day.to || '').toLowerCase();
-      const fromStr = (day.from || '').toLowerCase();
-      
-      const isFlight = flyKeywords.some(k => drivesStr.includes(k) || activitiesStr.includes(k) || toStr.includes(k) || fromStr.includes(k));
-      
-      if (isFlight) {
-         // Prevent duplicate flight for the same route
-         const routeDesc = `${day.from} to ${day.to} Flight`;
-         if (!flights.some(f => f.route === routeDesc)) {
-            flights.push({ route: routeDesc, costPerPerson: 360 });
-         }
-      }
-
-      // Ngorongoro Transit Fee
-      if (!isFlight) {
-          const isWestStr = (str: string) => str.includes('serengeti') || str.includes('kogatende');
-          const isEastStr = (str: string) => str.includes('karatu') || str.includes('arusha') || str.includes('tarangire') || str.includes('manyara') || str.includes('mto wa mbu');
-          
-          let fromIsWest = isWestStr(fromStr);
-          let fromIsEast = isEastStr(fromStr);
-          let toIsWest = isWestStr(toStr);
-          let toIsEast = isEastStr(toStr);
-
-          // Fallback to check lodge location if 'to' is vague (like 'ngorongoro')
-          if (dbLodge && !toIsWest && !toIsEast) {
-              const lodgePark = SAFARI_DATABASE.parks.find(p => p.id === dbLodge.park_id);
-              if (lodgePark) {
-                  const pName = lodgePark.name.toLowerCase();
-                  if (isWestStr(pName)) toIsWest = true;
-                  if (isEastStr(pName)) toIsEast = true;
-              }
-              const lName = dbLodge.name.toLowerCase();
-              if (isWestStr(lName)) toIsWest = true;
-              if (isEastStr(lName)) toIsEast = true;
-          }
-
-          if ((fromIsEast && toIsWest) || (fromIsWest && toIsEast)) {
-             const parkName = "Ngorongoro Conservation Area";
-             if (parkMap.has(parkName)) {
-                 parkMap.get(parkName)!.transitDays = (parkMap.get(parkName)!.transitDays || 0) + 1;
-                 parkMap.get(parkName)!.transitFeePerPerson = 71; // Ensure fee is set
-             } else {
-                 parkMap.set(parkName, { park: parkName, feePerPerson: 0, concessionPerPerson: 0, transitFeePerPerson: 71, days: 0, transitDays: 1 });
-             }
-          }
-      }
-
-      // Check for permit extension logic
-      if (day.permit_extension && day.permit_extension.park) {
-         const parkName = day.permit_extension.park;
-         const p = SAFARI_DATABASE.parks.find(p => p.name.toLowerCase().includes(parkName.toLowerCase()) || parkName.toLowerCase().includes(p.name.toLowerCase())) as any;
-         const entry = p ? (p.entry_fee_usd || 71) : 71;
-
-         if (parkMap.has(parkName)) {
-             parkMap.get(parkName)!.days += day.permit_extension.days;
-         } else {
-             parkMap.set(parkName, { park: parkName, feePerPerson: entry, concessionPerPerson: 0, days: day.permit_extension.days });
-         }
-      }
-    });
-
-    return {
-      accList: Array.from(accommodationsMap.values()),
-      transList: [{ vehicle: "Private 4x4 Extended Safari Land Cruiser", days: days, pricePerDay: 280 }],
-      parkList: Array.from(parkMap.values()),
-      flightList: flights,
-      actList: optionalActivities
-    };
-  }, [itinerary, days, requiredVehicles, totalGuests]);
+  const childParkDiscount = 0.3; // Children usually 30% of adult park fee
+  const childAccDiscount = 0.5; // Children usually 50% for beds
 
   const formatMoney = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
   };
 
-  let subtotal = 0;
-
-  const roomMultiplier = roomTypeMultipliers[roomType].multi;
-  const childAccDiscount = 0.5; // Children usually 50% for beds
-  const childParkDiscount = 0.3; // Children usually 30% of adult park fee
-
-  // Acc calculations
-  const formattedAccList = accList.map(item => {
-    const accCostPerNightAdult = item.pricePerNight * roomMultiplier;
-    const accCostPerNightChild = item.pricePerNight * childAccDiscount;
-    const total = item.nights * ((adults * accCostPerNightAdult) + (children * accCostPerNightChild));
-    subtotal += total;
-    return { ...item, total, perAdult: accCostPerNightAdult, perChild: accCostPerNightChild };
-  });
-  const accTotal = formattedAccList.reduce((acc, curr) => acc + curr.total, 0);
-
-  // Trans calculations (Fixed price per vehicle per day, ignoring pax count unless > 7)
-  const formattedTransList = transList.map(item => {
-    const total = item.days * item.pricePerDay * requiredVehicles;
-    subtotal += total;
-    return { ...item, total, vehicles: requiredVehicles };
-  });
-  const transTotal = formattedTransList.reduce((acc, curr) => acc + curr.total, 0);
-
-  // Park calculations
-  const formattedParkList = parkList.map(item => {
-    const adultEntryTotal = item.feePerPerson * adults * item.days;
-    const childEntryTotal = (item.feePerPerson * childParkDiscount) * children * item.days;
-    
-    // Concession fees apply more loosely, assume same discount
-    const adultConcessionTotal = item.concessionPerPerson * adults * item.days;
-    const childConcessionTotal = (item.concessionPerPerson * childParkDiscount) * children * item.days;
-
-    // Transit fees
-    const transitFeePerPerson = item.transitFeePerPerson || 0;
-    const transitDays = item.transitDays || 0;
-    const adultTransitTotal = transitFeePerPerson * adults * transitDays;
-    const childTransitTotal = (transitFeePerPerson * childParkDiscount) * children * transitDays;
-
-    const total = adultEntryTotal + childEntryTotal + adultConcessionTotal + childConcessionTotal + adultTransitTotal + childTransitTotal;
-    subtotal += total;
-    return { 
-      ...item, 
-      total, 
-      adultEntryTotal, 
-      childEntryTotal, 
-      adultConcessionTotal, 
-      childConcessionTotal, 
-      childTransitTotal, 
-      adultTransitTotal 
-    };
-  });
-  const parkTotal = formattedParkList.reduce((acc, curr) => acc + curr.total, 0);
-
-  // Flights calculations
-  const formattedFlightList = flightList.map(item => {
-    // Children normally ~75% on flights, let's just use 80%
-    const flightCostChild = item.costPerPerson * 0.8;
-    const total = (item.costPerPerson * adults) + (flightCostChild * children);
-    subtotal += total;
-    return { ...item, total, flightCostChild };
-  });
-  const flightTotal = formattedFlightList.reduce((acc, curr) => acc + curr.total, 0);
-
-  // Activities calculations
-  const formattedActList = actList.map((item: any) => {
-    let total;
-    let actCostChild;
-    if (item.isFlatVehicleFee) {
-        total = item.costPerPerson * totalGuests; // costPerPerson contains the already distributed fee
-        actCostChild = item.costPerPerson;
-    } else {
-        actCostChild = item.costPerPerson * 0.5; // generic 50%
-        total = (item.costPerPerson * adults) + (actCostChild * children);
-    }
-    subtotal += total;
-    return { ...item, total, actCostChild };
-  });
-  const actTotal = formattedActList.reduce((acc, curr) => acc + curr.total, 0);
-
-  // Taxes calculations
-  const TAXES_VAT_PERCENT = 18;
-  const TAXES_SERVICE_FEE = 150;
-  const TAXES_CONSERVATION_LEVY = 100;
-
-  const vatEst = subtotal * (TAXES_VAT_PERCENT / 100);
-  const taxesTotal = vatEst + TAXES_SERVICE_FEE + TAXES_CONSERVATION_LEVY;
-  const grandTotal = subtotal + taxesTotal;
 
   const Section = ({ id, title, total, children }: { id: string, title: string, total?: string, children: React.ReactNode }) => (
     <div className="bg-white border-b border-safari-accent/20 overflow-hidden mb-0">

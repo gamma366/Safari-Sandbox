@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react';
-import { MapPin, Clock, Sun, Calendar, Compass, Camera, Tent, Loader2, Sparkles, Info, X, ShieldCheck, AlertTriangle, Edit3, Plus, Settings2, Check, ArrowRight, Receipt, Trash2, Users, Printer, Bird } from 'lucide-react';
+import { MapPin, Clock, Sun, Calendar, Compass, Camera, Tent, Loader2, Sparkles, Info, X, ShieldCheck, AlertTriangle, Edit3, Plus, Settings2, Check, ArrowRight, Receipt, Trash2, Users, Printer, Bird, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -14,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { calculateCostSummary } from './lib/costCalculator';
 
 const SafariMap = lazy(() => import('./components/SafariMap').then(m => ({ default: m.SafariMap })));
 const CostSummary = lazy(() => import('./components/CostSummary').then(m => ({ default: m.CostSummary })));
@@ -205,6 +207,8 @@ interface Itinerary {
 
 export default function App() {
   const [days, setDays] = useState<number>(7);
+  const [durationMode, setDurationMode] = useState<'manual' | 'auto'>('manual');
+  const [budget, setBudget] = useState<string>('');
   const [interests, setInterests] = useState<string[]>(['wildlife']);
   const [season, setSeason] = useState<string>('July');
   const [flightPref, setFlightPref] = useState<string>('none');
@@ -217,6 +221,7 @@ export default function App() {
   const [lodgeAlerts, setLodgeAlerts] = useState<Record<number, string>>({});
   const [selectedDay, setSelectedDay] = useState<DayPlan | null>(null);
   const [activeTab, setActiveTab] = useState<"view" | "customize" | "map" | "cost" | "consultant">("view");
+  const [showMobileForm, setShowMobileForm] = useState(true);
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [activityConfirm, setActivityConfirm] = useState<{day: number, activity: string, action: 'add' | 'remove'} | null>(null);
   
@@ -915,6 +920,7 @@ export default function App() {
     setProgress(0);
     setError(null);
     setItinerary(null);
+    setShowMobileForm(false);
 
     const startTime = Date.now();
     const assumedDuration = 25000; // 25 seconds typical generation time
@@ -931,7 +937,10 @@ export default function App() {
         You use REAL geography, REAL driving routes, and REAL safari logic.
         
         INPUT:
-        - Number of days: ${days}
+        - Mode: ${durationMode === 'auto' ? 'AUTO DURATION CALCULATION' : 'MANUAL'}
+        - Requested Days: ${durationMode === 'auto' ? 'CALCULATE BASED ON BUDGET' : days}
+        - Total Budget (USD): ${budget || 'Not specified'}
+        - Guests: ${paxAdults} Adults, ${paxChildren} Children
         - Interests: ${interests.join(', ')}
         - Season (month): ${season}
         - Flight Preference: ${flightPref}
@@ -943,7 +952,8 @@ export default function App() {
         CORE OBJECTIVE:
         Generate a LOGICAL, REALISTIC, and HIGH-QUALITY safari itinerary.
         IMPORTANT: Keep descriptions, reasoning, and expert_tips highly concise (1-2 sentences maximum). Do not generate overly long text block otherwise your response will be severely truncated.
-        - EXPLICIT TRAVEL STRATEGY REQUIREMENT: In the \`route_overview\` field (which acts as the Travel Strategy card), you MUST explain why you chose this specific route. If the user did NOT explicitly select "great-migration" in their interests, but your route either aligns with it by coincidence of season or explicitly ignores it because they didn't ask for it, you MUST explain that decision regarding the Great Migration in the \`route_overview\` text.
+        - EXPLICIT TRAVEL STRATEGY REQUIREMENT: In the \`route_overview\` field, you MUST explain why you chose this specific route. If they selected "Great Migration", you MUST explicitly mention if their budget or duration was a constraint in reaching the optimal zone.
+        ${durationMode === 'auto' ? `- BUDGET AND DURATION REQUIREMENT (STRICT): Since Duration is set to AUTO, you MUST calculate the optimal number of days based on the Total Budget of $${budget} for ${paxAdults} Adults and ${paxChildren} Children. Average safari cost per person per day is ~$300-$500 (Mid-range) or ~$800-$1500+ (Luxury). Calculate the maximum number of days the budget can afford, and generate EXACTLY that many days in the itinerary (e.g., if budget affords 12 days, generate a 12-day itinerary; if budget affords 4 days, generate 4 days). Do NOT artificially restrict the trip to 7 days if the budget affords 10, 14, or more days! Output the calculated number of days as the itinerary length!` : ''}
 
         PLANNING LOGIC (VERY IMPORTANT):
         1. PARK SELECTION:
@@ -953,7 +963,7 @@ export default function App() {
            - 4–6 days: Add Serengeti
            - 7+ days: Include Serengeti zones strategically
         2. SERENGETI ZONE LOGIC:
-           - GREAT MIGRATION REQUIREMENT: ${interests.includes('great-migration') ? `The client explicitly selected "Great Migration". You MUST follow the migration and STRICTLY PRIORITIZE the migration area by maximizing the number of days spent there! For their season (${season}): Jan-Mar -> Ndutu, Apr-Jun -> Central/Western, Jul-Oct -> Northern, Nov-Dec -> Central/South. Allocate the OVERWHELMING MAJORITY of their days to this specific region.` : `The client did NOT select "Great Migration". You MUST NOT build the itinerary around following the migration! Do NOT prioritize the migration areas in number of days or routing. Guide them to general wildlife areas with strong resident wildlife like Central Serengeti, and ignore the migration calendar.`}
+           - GREAT MIGRATION REQUIREMENT (ABSOLUTE PRIORITY): ${interests.includes('migration') ? `The client EXPLICITLY selected "Great Migration". YOU MUST IGNORE ALL OTHER ZONES in the Serengeti and ONLY send them to the migration zone specific to their season (${season}): Jan-Mar -> Ndutu, Apr-Jun -> Central/Western, Jul-Oct -> Northern (Kogatende), Nov-Dec -> Central/South. You MUST allocate the OVERWHELMING MAJORITY of their safari days to this specific area. DO NOT secretly substitute Central Serengeti just because of budget unless you explicitly tell the user. If the budget ($${budget || 'unlimited'}) is too low to comfortably reach this migration zone, YOU MUST STILL ATTEMPT TO FORCE REACHING THERE and explain in the \`route_overview\` that "this goal stretched the budget." If the budget or duration is truly not enough to reach the migration, clearly state in the \`route_overview\` EXACTLY why it is not possible (e.g., "We could not include the Great Migration because flights to the North exceed your budget"). You MUST select lodges matching this zone.` : `The client did NOT select "Great Migration". You MUST NOT build the itinerary around following the migration! Do NOT prioritize the migration areas in number of days or routing. Guide them to general wildlife areas with strong resident wildlife like Central Serengeti, and ignore the migration calendar.`}
            - Big cats → Central Serengeti
            - Photography → mix of zones
         3. ROUTING & LOGISTICS:
@@ -961,19 +971,27 @@ export default function App() {
            - UNSOLICITED ACTIVITIES: ABSOLUTELY DO NOT add Cultural Visits (e.g., Mto wa Mbu, Maasai Boma, banana plantations, local markets, cultural village tour) to the itinerary UNLESS the client explicitly selected the "Cultural Visits" ('cultural') interest! This is a strict constraint. Put them strictly as options in 'alternatives' instead.
            - Following logical driving order: Arusha → Tarangire/Manyara → Ngorongoro → Serengeti.
            - KARATU TO SERENGETI TIMING ISSUE: Karatu to Naabi Hill Gate (Serengeti entry) takes 3-4 hours. To avoid long travel, do Crater on the way IN to Serengeti (Day 2), not the way OUT.
-           - STANDARD 7-DAY FLOW:
-             Day 1: Arusha -> Karatu (via Tarangire game drive).
-             Day 2: Karatu -> Ngorongoro Crater -> Serengeti (Central or Migration zone).
-             Day 3: Serengeti game drive.
+           - STANDARD 7-DAY FLOW REFERENCE:
+             Day 1: Arusha -> Tarangire (overnight in Tarangire).
+             Day 2: Exit Tarangire same time as entry (e.g. 10:30/11:00) -> Ngorongoro Conservation Area.
+             Day 3: Ngorongoro Crater -> Serengeti (Central or Migration zone).
              Day 4: Serengeti game drive.
-             Day 5: Serengeti -> Karatu.
-             Day 6: Karatu -> Lake Manyara or Tarangire -> Karatu (or Arusha).
+             Day 5: Serengeti game drive.
+             Day 6: Serengeti -> Karatu.
              Day 7: Karatu -> Arusha.
-           - STANDARD 5-DAY FLOW WITHOUT EARLY FLIGHT:
-             Day 1: Arusha -> Tarangire -> Karatu (Do NOT use Manyara on Day 1 unless "bird-watching" requested; offer it as an alternative).
-             Day 2: Karatu -> Ngorongoro Crater -> Serengeti Central.
-             Day 3-4: Serengeti Central game drive.
-             Day 5: Serengeti Central to Arusha.
+           - SAFARIS LESS THAN 7 DAYS FLOW (e.g. 5-DAY FLOW REFERENCE):
+             Day 1: Arusha -> Tarangire -> Karatu (Single day flow. Do NOT use Manyara on Day 1 unless "bird-watching" requested; offer it as an alternative).
+             Day 2: Karatu -> Ngorongoro Crater -> Serengeti (Central or Migration zone).
+             Day 3-4: Serengeti (Central or Migration zone) game drive.
+             Day 5: Serengeti (Central or Migration zone) to Arusha.
+           - FOR SAFARIS > 7 DAYS: Dynamically extend the flow by adding multiple regions in the Serengeti (e.g. Central AND Northern), adding Lake Manyara, or staying longer in Tarangire/Ngorongoro area.
+           - TARANGIRE PERMIT TIMING & ROUTING RULES (STRICT):
+             - FOR SAFARIS 7 DAYS OR MORE: If you spend a night in Tarangire, the next day you MUST exit the park at the EXACT same time you entered the previous day. 
+             - Example: Arusha to Tarangire takes 2 - 2.5 hrs. If starting at 08:00 AM, arrival is 10:30/11:00 AM. Next day exit is 10:30/11:00 AM.
+             - SCENARIO 1 (Exit before 11:30 AM): You MUST go straight to Ngorongoro Conservation Area to spend the night. NO Karatu! Exception: If the client selected "bird-watching", add Lake Manyara N.P. and then spend the night in Karatu.
+             - SCENARIO 2 (Exit after 13:00 PM): You MUST spend the night at Karatu.
+             - FOR SAFARIS LESS THAN 7 DAYS: You MUST use the "Arusha -> Tarangire -> Karatu" single-day flow.
+           - SERENGETI EXIT RULE (CRATER ALREADY DONE): On the last day heading out from Serengeti (Central or Ndutu), if the Ngorongoro Crater was already visited earlier in the trip, DO NOT stay in Ngorongoro Conservation Area on the way out. You MUST go straight to Karatu for the overnight stop.
            - NEVER DRIVE NORTHERN SERENGETI TO ARUSHA IN ONE DAY: This is a 10-12 hour drive. It is IMPOSSIBLE for a standard safari. 
              - If the client is in Northern Serengeti and needs to return to Arusha by road, they MUST have an intermediate stop.
              - Alternatively, recommend a FLIGHT OUT from Kogatende to Arusha.
@@ -982,11 +1000,8 @@ export default function App() {
              - Flight Out: Arusha -> Drive to Tarangire -> Ngorongoro -> Serengeti -> Fly back to Arusha.
              - Explain the pros/cons of their flight choice in "flight_logic_summary".
            - NEVER create straight-line or unrealistic travel.
-           - DAY 1 STRICT RULE: Day 1 should ALWAYS be Arusha -> Karatu (via Tarangire game drive) (unless a flight is involved). 
-             Crucially, in the \`alternatives\` array for Day 1, you MUST include an option to "Spend a night in Tarangire inside the park". The title should include a warning. The reasoning must explicitly mention: "Warning: This will automatically add an extra day to your itinerary to accommodate the change." You MUST set \`triggers_regeneration: true\` on this specific alternative object.
            - ALTERNATIVES: You MUST provide at least 3 distinct and rich alternative route options or experiences for EACH DAY. 
            - EXTRA NIGHT RULE (STRICT MANDATE): For EVERY SINGLE DAY in the itinerary where the destination (or main park) is NOT Karatu AND it is not the final day of the safari, you ABSOLUTELY MUST include one alternative option to "Spend an extra night in [Location]". The title MUST include "(Adds 1 Day)". The reasoning MUST explicitly mention: "Warning: This will automatically add an extra day to your itinerary to accommodate the change." You MUST set \`triggers_regeneration: true\` on this specific alternative object. This applies to Serengeti, Ngorongoro, Tarangire, etc. Do not skip this!
-           - TARANGIRE 2 NIGHTS EXIT RULE: If a guest stays in Tarangire for 2 nights, and the next day they have to exit the park (e.g. 6 to 8 hours game drive before exit), they MUST NOT stay in Karatu afterwards. Their next stay MUST be inside the Ngorongoro Conservation Area.
            - SERENGETI TO CRATER RULE: If a guest is coming from Serengeti and has a Ngorongoro Crater activity, priority MUST be to stay in the Ngorongoro Conservation Area, NOT Karatu.
            - NGORONGORO CRATER TO ENDING POINT: When leaving Ngorongoro Crater to end the safari, you MUST provide options to either return directly to Arusha or stay overnight in Karatu.
            - KARATU OVERUSE: Do NOT default to Karatu for every intermediate stop. 
@@ -1012,6 +1027,7 @@ export default function App() {
            - Stay at Gibb's Farm ONLY if the day ends in Karatu (Repositioning day).
            - PREFERRED in Karatu: If a user has "luxury" preference or just needs a highly recommended place in Karatu, heavily PREFER "The Retreat Ngorongoro". 
            - PREFERRED in Arusha: If a day starts/ends in Arusha and requires a stay, strongly prefer "The African Tulip".
+           - MIGRATION LODGES: If "Great Migration" is selected, you MUST pick lodges from the database whose \`zone\` matches the required migration area (e.g., if July-Oct, pick lodges in \`zone_004\` / Northern).
            - NEGATIVE GUIDANCE: If going to Ndutu, write the location precisely as 'Ndutu' instead of general 'Serengeti'.
            - CATEGORIZE lodges: 
              - "Inside the Park" (inside_park: true) - Usually more expensive, includes park fees for the night.
@@ -1091,6 +1107,9 @@ export default function App() {
       await new Promise(resolve => setTimeout(resolve, 400));
       
       console.log("Generated Itinerary Data:", data);
+      if (data && data.summary && data.summary.total_days && durationMode === 'auto') {
+        setDays(data.summary.total_days);
+      }
       setItinerary(data);
       setOriginalItinerary(JSON.parse(JSON.stringify(data))); // Deep copy for resetting
     } catch (err: any) {
@@ -1166,7 +1185,7 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 print:block">
           
           {/* Form (Left Column on Desktop) */}
-          <div className="lg:col-span-3 space-y-6 print:hidden">
+          <div className={`lg:col-span-3 space-y-6 print:hidden ${showMobileForm ? 'block' : 'hidden lg:block'}`}>
             <Card className="border border-safari-accent/20 shadow-2xl shadow-black/5 rounded-none bg-white">
               <CardHeader className="bg-safari-bg/80 border-b border-safari-accent/10 pb-8 pt-8">
                 <CardTitle className="font-serif text-3xl tracking-tight text-safari-text text-center">Design Your Safari</CardTitle>
@@ -1174,6 +1193,53 @@ export default function App() {
               </CardHeader>
               <CardContent className="p-6 space-y-8">
                 
+                {/* Budget & Guests */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-safari-text flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-safari-accent" />
+                        Total Budget (USD)
+                      </Label>
+                      <Input 
+                        type="number" 
+                        placeholder="e.g. 5000" 
+                        value={budget} 
+                        onChange={(e) => setBudget(e.target.value)}
+                        className="rounded-xl border-safari-accent/20 h-10 text-base focus:outline-none focus:ring-2 focus:ring-safari-accent/30"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-safari-text flex items-center gap-2">
+                        <Users className="w-4 h-4 text-safari-accent" />
+                        Guests
+                      </Label>
+                      <div className="flex gap-4">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs text-safari-muted">Adults</Label>
+                          <Input 
+                            type="number" 
+                            min="1"
+                            value={paxAdults} 
+                            onChange={(e) => setPaxAdults(parseInt(e.target.value) || 1)}
+                            className="rounded-xl border-safari-accent/20 text-center h-10"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs text-safari-muted">Children</Label>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            value={paxChildren} 
+                            onChange={(e) => setPaxChildren(parseInt(e.target.value) || 0)}
+                            className="rounded-xl border-safari-accent/20 text-center h-10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Duration */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -1181,16 +1247,44 @@ export default function App() {
                       <Calendar className="w-4 h-4 text-safari-accent" />
                       Duration
                     </Label>
-                    <span className="font-serif text-xl text-safari-accent font-semibold">{days} Days</span>
+                    <div className="flex items-center bg-safari-accent/10 rounded-lg p-1">
+                      <button 
+                        onClick={() => setDurationMode('manual')}
+                        className={`text-xs px-3 py-1 font-semibold rounded-md transition-colors ${durationMode === 'manual' ? 'bg-white shadow text-safari-accent' : 'text-safari-muted hover:text-safari-text'}`}
+                      >
+                        Manual
+                      </button>
+                      <button 
+                        onClick={() => setDurationMode('auto')}
+                        className={`text-xs px-3 py-1 font-semibold rounded-md transition-colors ${durationMode === 'auto' ? 'bg-white shadow text-safari-accent' : 'text-safari-muted hover:text-safari-text'}`}
+                      >
+                        Auto
+                      </button>
+                    </div>
                   </div>
-                  <Slider 
-                    value={days} 
-                    onValueChange={(v) => setDays(Array.isArray(v) ? v[0] : v as number)} 
-                    min={1} 
-                    max={14} 
-                    step={1}
-                    className="py-4"
-                  />
+                  
+                  {durationMode === 'manual' ? (
+                    <>
+                      <div className="flex justify-end">
+                        <span className="font-serif text-xl text-safari-accent font-semibold">{days} Days</span>
+                      </div>
+                      <Slider 
+                        value={[days]} 
+                        onValueChange={(v) => setDays(Array.isArray(v) ? v[0] : v as number)} 
+                        min={1} 
+                        max={14} 
+                        step={1}
+                        className="py-4"
+                      />
+                    </>
+                  ) : (
+                    <div className="bg-safari-accent/5 border border-safari-accent/20 rounded-xl p-4 flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-safari-accent shrink-0 mt-0.5" />
+                      <p className="text-sm text-safari-muted leading-relaxed">
+                        AI will automatically recommend the optimal number of days based on your <span className="font-semibold text-safari-text">budget of {budget ? `$${budget}` : '...'}</span>, guest count, and selected interests.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Season */}
@@ -1282,12 +1376,22 @@ export default function App() {
                   )}
                   </span>
                 </Button>
+
+                {itinerary && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowMobileForm(false)} 
+                    className="w-full h-14 mt-4 lg:hidden border-safari-accent/50 text-safari-accent bg-transparent hover:bg-safari-bg transition-colors uppercase tracking-[0.2em] font-medium"
+                  >
+                    View Current Itinerary
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Itinerary (Right Column on Desktop) */}
-          <div className="lg:col-span-9 print:col-span-full">
+          <div className={`lg:col-span-9 print:col-span-full ${!showMobileForm ? 'block' : 'hidden lg:block'}`}>
             <AnimatePresence mode="wait">
               {loading ? (
                 <motion.div 
@@ -1314,6 +1418,15 @@ export default function App() {
                   animate={{ opacity: 1, scale: 1 }}
                   className="space-y-8 pb-20"
                 >
+                  <div className="lg:hidden flex items-center justify-between mt-2 mb-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowMobileForm(true)} 
+                      className="w-full border-safari-accent text-safari-accent font-medium tracking-widest uppercase py-6"
+                    >
+                      <Settings2 className="w-5 h-5 mr-2" /> Modify Parameters
+                    </Button>
+                  </div>
                   <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
                     <div className="bg-white/95 backdrop-blur shadow-md border border-safari-accent/20 p-4 md:px-6 flex flex-col md:flex-row justify-between items-end gap-4 mb-8 print:hidden">
                       <TabsList className="bg-transparent p-0 h-auto gap-6 rounded-none justify-start w-full md:w-auto border-b border-safari-accent/20 pb-0">
@@ -1372,8 +1485,10 @@ export default function App() {
                             </div>
                             <div className="flex flex-col items-end gap-2 text-right">
                               <span className="text-xs font-medium uppercase tracking-[0.2em] opacity-60 text-safari-accent">Base Estimate</span>
-                              <span className="text-4xl lg:text-5xl font-serif text-safari-accent drop-shadow-sm">${itinerary.pricing_estimate.total_estimate}</span>
-                              <span className="text-xs opacity-60 text-[#FCFBFA]/70">({itinerary.pricing_estimate.total_range} - based on 2 Guests)</span>
+                              <span className="text-4xl lg:text-5xl font-serif text-safari-accent drop-shadow-sm">
+                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(calculateCostSummary(itinerary.itinerary, paxAdults, paxChildren, roomType).grandTotal)}
+                              </span>
+                              <span className="text-xs opacity-60 text-[#FCFBFA]/70">(Based on {paxAdults + paxChildren} Guests & {roomType} setup)</span>
                             </div>
                           </div>
                         </div>
@@ -1440,7 +1555,7 @@ export default function App() {
                               </div>
                               <div>
                                 <h4 className="font-bold text-lg text-amber-900 mb-1 tracking-wide">Safari Budget Transparency</h4>
-                                <p className="text-sm md:text-base text-amber-800 leading-[1.8] max-w-md">The base estimate is {itinerary.pricing_estimate.total_range} for 2 adults over {itinerary.itinerary.length} days. Excludes international flights. <strong className="font-black">See the Cost Summary tab for exact group pricing with children and room types.</strong></p>
+                                <p className="text-sm md:text-base text-amber-800 leading-[1.8] max-w-md">The base estimate is {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(calculateCostSummary(itinerary.itinerary, paxAdults, paxChildren, roomType).grandTotal)} for {paxAdults + paxChildren} guests over {itinerary.itinerary.length} days. Excludes international flights. <strong className="font-black">See the Cost Summary tab for exact broken down group pricing.</strong></p>
                               </div>
                             </div>
                           </div>
