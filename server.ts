@@ -118,6 +118,14 @@ async function startServer() {
                         time: { type: Type.STRING }
                       }
                     },
+                    permit_extension: {
+                      type: Type.OBJECT,
+                      properties: {
+                        park: { type: Type.STRING },
+                        days: { type: Type.INTEGER },
+                        reasoning: { type: Type.STRING }
+                      }
+                    },
                     permit_advisory: { type: Type.STRING },
                     lodge: { 
                       type: Type.OBJECT,
@@ -165,7 +173,7 @@ async function startServer() {
           if (parseError.message.includes("Unterminated string") || parseError.message.includes("Unexpected end")) {
             res.status(500).json({ error: "Itinerary Generation Error: The generated itinerary got too long and was cut off. Please try generating a shorter itinerary (fewer days or simpler rules)." });
           } else {
-            res.status(500).json({ error: "Itinerary Generation Error: Failed to parse complete itinerary data from the AI." });
+            res.status(500).json({ error: "Itinerary Generation Error: Failed to parse complete itinerary data from the system." });
           }
         }
       } else {
@@ -276,6 +284,14 @@ async function startServer() {
                   time: { type: Type.STRING }
                 }
               },
+              permit_extension: {
+                type: Type.OBJECT,
+                properties: {
+                  park: { type: Type.STRING },
+                  days: { type: Type.INTEGER },
+                  reasoning: { type: Type.STRING }
+                }
+              },
               permit_advisory: { type: Type.STRING },
               lodge: { 
                 type: Type.OBJECT,
@@ -303,7 +319,7 @@ async function startServer() {
           res.json(JSON.parse(text));
         } catch (parseError: any) {
           console.error("JSON Parse Error:", parseError);
-          res.status(500).json({ error: "Failed to parse the extra day response from AI." });
+          res.status(500).json({ error: "Failed to parse the extra day response from the system." });
         }
       } else {
         res.status(500).json({ error: "Failed to generate extra day." });
@@ -419,6 +435,14 @@ async function startServer() {
                   properties: {
                     gate: { type: Type.STRING },
                     time: { type: Type.STRING }
+                  }
+                },
+                permit_extension: {
+                  type: Type.OBJECT,
+                  properties: {
+                    park: { type: Type.STRING },
+                    days: { type: Type.INTEGER },
+                    reasoning: { type: Type.STRING }
                   }
                 },
                 permit_advisory: { type: Type.STRING },

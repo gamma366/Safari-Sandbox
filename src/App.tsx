@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -22,15 +23,15 @@ const CostSummary = lazy(() => import('./components/CostSummary').then(m => ({ d
 const ConsultantTab = lazy(() => import('./components/ConsultantTab').then(m => ({ default: m.ConsultantTab })));
 
 const INTEREST_OPTIONS = [
-  { id: 'wildlife', label: 'General Wildlife', icon: Compass },
-  { id: 'big-cats', label: 'Big Cats', icon: Camera },
-  { id: 'bird-watching', label: 'Bird Watching', icon: Bird },
-  { id: 'photography', label: 'Photography', icon: Camera },
-  { id: 'luxury', label: 'Luxury Lodges', icon: Sparkles },
-  { id: 'budget', label: 'Budget/Camping', icon: Tent },
-  { id: 'migration', label: 'Great Migration', icon: Compass },
-  { id: 'cultural', label: 'Cultural Visits', icon: MapPin },
-  { id: 'crater-full', label: 'Full Crater Game Drive', icon: Sun },
+  { id: 'wildlife', label: 'General Wildlife', icon: Compass, description: 'A balanced safari focusing on diverse species including elephants, giraffes, zebras, and antelopes across varied landscapes.' },
+  { id: 'big-cats', label: 'Big Cats', icon: Camera, description: 'Prioritizes regions like Central Serengeti known for high concentrations of lions, leopards, and cheetahs.' },
+  { id: 'bird-watching', label: 'Bird Watching', icon: Bird, description: 'Highlights parks with rich avian life, such as Lake Manyara and Tarangire, ideal for spotting endemic and migratory birds.' },
+  { id: 'photography', label: 'Photography', icon: Camera, description: 'Focuses on scenic landscapes, golden hour light, and positioned game drives tailored for the best photographic opportunities.' },
+  { id: 'luxury', label: 'Luxury Lodges', icon: Sparkles, description: 'Features high-end accommodations with premium amenities, exceptional service, and exclusive locations.' },
+  { id: 'budget', label: 'Budget/Camping', icon: Tent, description: 'Focuses on cost-effective travel using public campsites or budget lodges without compromising the wilderness experience.' },
+  { id: 'migration', label: 'Great Migration', icon: Compass, description: 'Tracks the massive herds of wildebeest and zebras. Routing adapts heavily to the season to ensure maximum exposure to the migration.' },
+  { id: 'cultural', label: 'Cultural Visits', icon: MapPin, description: 'Includes opportunities to interact with local communities like the Maasai or Hadzabe for an authentic cultural exchange.' },
+  { id: 'crater-full', label: 'Full Crater Game Drive', icon: Sun, description: 'Ensures a comprehensive, full-day exploration of the Ngorongoro Crater, maximizing time in this unique caldera.' },
 ];
 
 const FLIGHT_OPTIONS = [
@@ -230,6 +231,8 @@ export default function App() {
   const [paxChildren, setPaxChildren] = useState<number>(0);
   const [roomType, setRoomType] = useState<string>('double');
 
+  const [activeInterestInfo, setActiveInterestInfo] = useState<string | null>(null);
+
   const toggleInterest = (id: string) => {
     setInterests(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -259,7 +262,7 @@ export default function App() {
           const usp = newLodgeData.usp || "provides an excellent base for your safari activities";
           
           // 1. Surgical regex cleanup to remove standard stay justifications if they exist (prevents stacking)
-          // Also look for specific AI-like sentences about staying at a place
+          // Also look for specific generated sentences about staying at a place
           let cleanReasoning = d.reasoning
             .replace(/We've selected .*? for our stay because it .*?\.\s*/g, "")
             .replace(/We've chosen .*? as it .*?\.\s*/g, "")
@@ -749,7 +752,7 @@ export default function App() {
 
   const getAvailableActivities = (day: DayPlan) => {
     return SAFARI_DATABASE.activities.filter(act => {
-      // 1. Remove "Crater Tour" from general list - it should be logically scheduled by AI or special
+      // 1. Remove "Crater Tour" from general list - it should be logically scheduled automatically or special
       if (act.name === "Crater Tour") return false;
 
       // 2. Maasai Boma Visit (Mto wa Mbu area and Ngorongoro area)
@@ -933,7 +936,7 @@ export default function App() {
     try {
       const prompt = `
         You are a PROFESSIONAL Tanzania safari planner with deep real-world experience.
-        You think like a safari guide, not a generic AI.
+        You think like a local professional safari guide.
         You use REAL geography, REAL driving routes, and REAL safari logic.
         
         INPUT:
@@ -1042,7 +1045,7 @@ export default function App() {
            - Balance travel vs game drives
            - Position client in best wildlife areas
         10. DETAILED EXPLANATIONS:
-           - For each day, provide a detailed_description (4-5 sentences) titled "Full Day Narrative". TONE: Immersive and highly descriptive, painting a picture of the safari experience. AVOID logistics, driving details, or lodge names here. Focus on the sights, smells, and magic of the bush.
+           - For each day, provide a detailed_description (4-5 sentences) titled "Full Day Narrative". TONE: Immersive and highly descriptive, painting a picture of the safari experience. INCLUDE time logistics, driving details, and park names naturally in the narrative. Focus on the sights, smells, and magic of the bush while keeping the traveler informed of the day's schedule.
            - For each day, provide a reasoning (3-4 sentences) titled "Guide's Advice". TONE: Practical and strategic. Focus on planning, logical reasoning, and helpful advice for the guest.
            - Make the explanations professional and evocative.
         11. EXPERT INSIDER TIPS:
@@ -1060,7 +1063,8 @@ export default function App() {
              - Loduare Gate: Entrance to Ngorongoro from Karatu/Manyara.
              - Naabi Hill Gate: Entrance/Exit between Ngorongoro and Serengeti.
            - CALCULATE: For each day, determine if a "permit_entry" or "permit_exit_deadline" or "permit_extension" applies. Be precise.
-        12. CUSTOMIZATION TAB ENRICHMENT (ALTERNATIVES):
+           - ADVISORY: Include a 'permit_advisory' string when a deadline is tight or an extension is applied to explain the time logistics to the user.
+        13. CUSTOMIZATION TAB ENRICHMENT (ALTERNATIVES):
            - The "Customize Plan" page needs to add NEW value, not just repeat the itinerary.
            - For EACH day, provide 2-3 distinct "alternatives" that actually change the logistics.
            - For each alternative, provide:
@@ -1281,7 +1285,7 @@ export default function App() {
                     <div className="bg-safari-accent/5 border border-safari-accent/20 rounded-xl p-4 flex items-start gap-3">
                       <Sparkles className="w-5 h-5 text-safari-accent shrink-0 mt-0.5" />
                       <p className="text-sm text-safari-muted leading-relaxed">
-                        AI will automatically recommend the optimal number of days based on your <span className="font-semibold text-safari-text">budget of {budget ? `$${budget}` : '...'}</span>, guest count, and selected interests.
+                        The optimal number of days will be automatically calculated based on your <span className="font-semibold text-safari-text">budget of {budget ? `$${budget}` : '...'}</span>, guest count, and selected interests.
                       </p>
                     </div>
                   )}
@@ -1333,18 +1337,57 @@ export default function App() {
                     {INTEREST_OPTIONS.map(interest => {
                       const isSelected = interests.includes(interest.id);
                       return (
-                        <Badge 
-                          key={interest.id}
-                          variant={isSelected ? "default" : "outline"}
-                          className={`cursor-pointer px-4 py-2 rounded-none text-xs tracking-wider uppercase transition-all duration-300 ${
-                            isSelected 
-                              ? 'bg-safari-accent hover:bg-safari-accent-hover text-white border-transparent shadow-md' 
-                              : 'bg-transparent hover:bg-safari-bg text-safari-muted border-safari-muted/30'
-                          }`}
-                          onClick={() => toggleInterest(interest.id)}
-                        >
-                          {interest.label}
-                        </Badge>
+                        <div key={interest.id} className="relative">
+                          <Popover 
+                            open={activeInterestInfo === interest.id}
+                            onOpenChange={(open) => setActiveInterestInfo(open ? interest.id : null)}
+                          >
+                            <div 
+                              className="relative"
+                              onMouseEnter={() => setActiveInterestInfo(interest.id)}
+                              onMouseLeave={() => setActiveInterestInfo(null)}
+                            >
+                              <Badge 
+                                variant={isSelected ? "default" : "outline"}
+                                className={`cursor-pointer pl-4 pr-9 py-2 rounded-none text-xs tracking-wider uppercase transition-all duration-300 relative ${
+                                  isSelected 
+                                    ? 'bg-safari-accent hover:bg-safari-accent-hover text-white border-transparent shadow-md' 
+                                    : 'bg-transparent hover:bg-safari-bg text-safari-muted border-safari-muted/30'
+                                }`}
+                                onClick={() => toggleInterest(interest.id)}
+                              >
+                                {interest.label}
+                                <PopoverTrigger 
+                                  className="absolute right-0 top-0 bottom-0 w-9 flex items-center justify-center text-inherit opacity-60 hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveInterestInfo(activeInterestInfo === interest.id ? null : interest.id);
+                                  }}
+                                >
+                                  <Info className="w-3.5 h-3.5" />
+                                </PopoverTrigger>
+                              </Badge>
+                              
+                              <PopoverContent 
+                                className="w-[calc(100vw-2rem)] max-w-xs p-4 bg-white border border-safari-accent/20 rounded-xl shadow-xl shadow-black/10 z-[100]"
+                                sideOffset={8}
+                                onMouseEnter={() => setActiveInterestInfo(interest.id)}
+                                onMouseLeave={() => setActiveInterestInfo(null)}
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <h4 className="font-bold text-xs text-safari-accent uppercase tracking-widest">{interest.label}</h4>
+                                  <button 
+                                    onClick={() => setActiveInterestInfo(null)}
+                                    className="text-safari-muted hover:text-safari-text p-1 rounded-md hover:bg-safari-bg transition-colors"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                                <p className="text-xs text-safari-text leading-relaxed font-medium">{interest.description}</p>
+                              </PopoverContent>
+                            </div>
+                          </Popover>
+                        </div>
                       );
                     })}
                   </div>
@@ -1770,21 +1813,27 @@ export default function App() {
                                           </Button>
                                         </div>
                                         <div className="flex flex-wrap gap-2">
-                                          {getAvailableActivities(day).map(act => (
+                                          {Array.from(new Set([...getAvailableActivities(day).map(a => a.name), ...day.activities])).map(actName => {
+                                            const act = SAFARI_DATABASE.activities.find(a => a.name === actName) || { id: `custom-${actName}`, name: actName };
+                                            return (
                                             <Badge 
                                               key={act.id} 
                                               variant={day.activities.includes(act.name) ? "default" : "outline"}
                                               className={`cursor-pointer px-3 py-1.5 rounded-lg transition-all ${
                                                 day.activities.includes(act.name) 
-                                                  ? "bg-safari-accent hover:bg-safari-accent/90" 
+                                                  ? "bg-safari-accent hover:bg-safari-accent/90 pr-2" 
                                                   : "border-safari-accent/20 text-safari-muted hover:bg-safari-accent/5"
                                               }`}
                                               onClick={() => handleActivityToggle(day.day, act.name)}
                                             >
-                                              {day.activities.includes(act.name) && <Check className="w-3 h-3 mr-1.5" />}
                                               {act.name}
+                                              {day.activities.includes(act.name) && (
+                                                <div className="ml-2 p-0.5 rounded-full hover:bg-white/20 transition-colors">
+                                                  <X className="w-3 h-3" />
+                                                </div>
+                                              )}
                                             </Badge>
-                                          ))}
+                                          )})}
                                         </div>
                                         <div className="space-y-2 mt-4">
                                           <Label className="text-safari-muted font-bold text-xs uppercase tracking-widest">Accommodation</Label>
@@ -1992,7 +2041,7 @@ export default function App() {
                   </div>
                   <h3 className="text-4xl md:text-5xl lg:text-[56px] font-serif text-safari-text mb-2 tracking-widest leading-tight">Ready to Explore?</h3>
                   <p className="text-lg md:text-xl leading-relaxed text-safari-muted max-w-md">
-                    Select your preferences on the left and let our AI craft a realistic, geographically accurate safari itinerary tailored just for you.
+                    Select your preferences on the left to generate a realistic, geographically accurate safari itinerary tailored just for you.
                   </p>
                 </motion.div>
               )}
